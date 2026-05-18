@@ -8,4 +8,5 @@ data/examples/
 data/training/*.csv
 data/training/*.tsv
 data/training/*.parquet
+data/training/cctyper_outputs/
 data/outputs/

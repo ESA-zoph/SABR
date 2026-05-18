@@ -8,6 +8,25 @@ The first target file is:
 data/training/repeats_cas_types.csv
 ```
 
+To collect completed CCTyper output folders into this file, create a manifest CSV:
+
+```csv
+cctyper_output_dir,genome_id,organism,taxonomy,assembly_level
+data/training/cctyper_outputs/GCF_000001,GCF_000001,Example bacterium,Bacteria,complete genome
+```
+
+Then run:
+
+```bash
+python -m crispr_phage_predictor.ml.collect_cctyper_training data/training/cctyper_manifest.csv --output data/training/repeats_cas_types.csv
+```
+
+Before running CCTyper locally, check dependencies:
+
+```bash
+python -m crispr_phage_predictor.ml.check_cctyper_environment
+```
+
 Required columns are defined in `crispr_phage_predictor.ml.dataset`.
 
 Initial dataset policy:

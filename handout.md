@@ -84,6 +84,37 @@ Current import rules:
 - ambiguous labels containing `/` or `,` are skipped in the first dataset
 - invalid repeat sequences are skipped
 
+The collector command combines multiple completed CCTyper output directories:
+
+```powershell
+python -m crispr_phage_predictor.ml.collect_cctyper_training data/training/cctyper_manifest.csv --output data/training/repeats_cas_types.csv
+```
+
+The manifest columns are:
+
+```text
+cctyper_output_dir
+genome_id
+organism
+taxonomy
+assembly_level
+```
+
+Before running CCTyper locally, check the environment:
+
+```powershell
+python -m crispr_phage_predictor.ml.check_cctyper_environment
+```
+
+Required runtime pieces:
+
+- `cctyper`
+- `prodigal`
+- `hmmsearch` from HMMER
+- `minced`
+- `blastn`
+- CCTyper database path via `CCTYPER_DB` or `--db`
+
 ## First Model Features
 
 Start with:
