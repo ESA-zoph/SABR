@@ -113,6 +113,20 @@ The feature table keeps `genome_id`, `contig_id`, `cas_type`, and `cas_subtype` 
 
 Validation should hold out whole genomes, species, or genera. Random array-level splitting is likely to overestimate performance because closely related genomes can share repeat families.
 
+## Baseline Classifier
+
+The first implemented classifier is `RepeatCasSubtypeClassifier` in `crispr_phage_predictor/ml/classifier.py`.
+
+Current behavior:
+
+- builds numeric repeat/array features from the local training table
+- trains a balanced random forest classifier
+- predicts `cas_subtype`
+- returns a confidence value and full subtype probability map
+- requires at least two subtype labels for training
+
+This is a baseline model, not a final scientific classifier. It should be compared against nearest-repeat similarity and evaluated with genome/species/genus holdout splits before interpretation.
+
 ## PAM/PFS Plan
 
 After subtype prediction exists, add a curated PAM/PFS rule table keyed by subtype. PAM support should be reported as evidence categories such as compatible, weak, absent, or not evaluated rather than as definitive resistance.
