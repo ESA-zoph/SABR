@@ -147,6 +147,12 @@ conda create -n cctyper -c conda-forge -c bioconda -c russel88 cctyper
 
 This route is preferred because CCTyper's maintainers state conda installs the software, dependencies, and database together.
 
+Current WSL note:
+
+- Running `wsl --install` from the Codex shell did not complete.
+- Windows reported that WSL is not installed and should be installed with `wsl.exe --install`.
+- This likely needs an elevated/admin PowerShell session and may require a restart.
+
 ## First Model Features
 
 Start with:

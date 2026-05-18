@@ -181,6 +181,7 @@ Current CCTyper setup status:
 - Missing runtime pieces are Prodigal, HMMER/hmmsearch, MinCED, and the CCTyper database.
 - A Linux/WSL conda environment file has been added at `envs/cctyper-linux.yml`.
 - Next data-acquisition step should run CCTyper in Linux/WSL or another Linux environment, then collect `crisprs_near_cas.tab` outputs using the local collector.
+- Attempting `wsl --install` from the Codex shell did not complete; Windows reported that WSL is not installed and should be installed with `wsl.exe --install`, likely from elevated/admin PowerShell.
 
 The first model should use repeat and array features only:
 
