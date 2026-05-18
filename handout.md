@@ -152,6 +152,10 @@ Current WSL note:
 - Running `wsl --install` from the Codex shell did not complete.
 - Windows reported that WSL is not installed and should be installed with `wsl.exe --install`.
 - This likely needs an elevated/admin PowerShell session and may require a restart.
+- User ran `wsl.exe --install` in Administrator PowerShell.
+- WSL 2.7.3 and `VirtualMachinePlatform` installed successfully.
+- Windows reported that the change will not take effect until reboot.
+- Next step is to reboot Windows, finish Ubuntu first-run setup, then run the Linux conda/CCTyper setup.
 
 ## First Model Features
 

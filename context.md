@@ -182,6 +182,8 @@ Current CCTyper setup status:
 - A Linux/WSL conda environment file has been added at `envs/cctyper-linux.yml`.
 - Next data-acquisition step should run CCTyper in Linux/WSL or another Linux environment, then collect `crisprs_near_cas.tab` outputs using the local collector.
 - Attempting `wsl --install` from the Codex shell did not complete; Windows reported that WSL is not installed and should be installed with `wsl.exe --install`, likely from elevated/admin PowerShell.
+- User then ran `wsl.exe --install` from Administrator PowerShell. WSL 2.7.3 and the `VirtualMachinePlatform` optional component were installed successfully, but Windows reported that changes will not take effect until reboot.
+- Current required next step: reboot Windows, finish Ubuntu/WSL first-run setup, then create the Linux CCTyper conda environment.
 
 The first model should use repeat and array features only:
 
