@@ -57,6 +57,33 @@ label_confidence
 pam_rule
 ```
 
+## CCTyper Importer
+
+The local importer in `crispr_phage_predictor/ml/dataset.py` converts CCTyper `crisprs_near_cas.tab`-style tables into the local schema.
+
+Expected CCTyper fields:
+
+- `Contig`
+- `Start`
+- `End`
+- `Consensus_repeat`
+- `N_repeats`
+- `Repeat_len`
+- `Spacer_len_avg`
+- `Trusted`
+- `Subtype` or `Prediction`
+- `Subtype_probability` when available
+
+Current import rules:
+
+- one output row per CRISPR array
+- `spacer_count = N_repeats - 1`
+- `cas_type` is inferred from subtype prefix, for example `I-E` becomes `Type I`
+- `label_source = nearby_cas_operon`
+- trusted rows with subtype probability at least 0.8 are marked high confidence
+- ambiguous labels containing `/` or `,` are skipped in the first dataset
+- invalid repeat sequences are skipped
+
 ## First Model Features
 
 Start with:

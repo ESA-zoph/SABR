@@ -159,6 +159,14 @@ Preferred strategy:
 
 The first local schema is tracked in `crispr_phage_predictor/ml/dataset.py`, with documentation in `data/training/README.md` and technical notes in `handout.md`.
 
+Implemented dataset scaffolding now includes:
+
+- repeat/Cas training table schema
+- schema validation
+- high-confidence label filtering
+- CCTyper `crisprs_near_cas.tab`-style importer into the local schema
+- tests for schema validation and CCTyper conversion
+
 The first model should use repeat and array features only:
 
 - repeat sequence
