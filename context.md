@@ -173,6 +173,15 @@ Implemented dataset scaffolding now includes:
 - nearest-repeat similarity classifier as an interpretable baseline
 - command-line train/test evaluator comparing nearest-repeat and random-forest methods
 
+Current CCTyper setup status:
+
+- CCTyper Python package is present on Windows, but the full runtime is not complete.
+- Miniconda was installed locally.
+- Native Windows conda could not solve the CCTyper environment because the bioconda stack is Linux-oriented.
+- Missing runtime pieces are Prodigal, HMMER/hmmsearch, MinCED, and the CCTyper database.
+- A Linux/WSL conda environment file has been added at `envs/cctyper-linux.yml`.
+- Next data-acquisition step should run CCTyper in Linux/WSL or another Linux environment, then collect `crisprs_near_cas.tab` outputs using the local collector.
+
 The first model should use repeat and array features only:
 
 - repeat sequence

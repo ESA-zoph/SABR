@@ -115,6 +115,38 @@ Required runtime pieces:
 - `blastn`
 - CCTyper database path via `CCTYPER_DB` or `--db`
 
+## Local CCTyper Setup Status
+
+Current Windows-native status:
+
+- Miniconda was installed successfully.
+- The existing Python CCTyper launcher was repaired enough to show help by pinning compatible `setuptools<81` and `drawSvg<2`.
+- A pilot CCTyper run reached the runtime stage but failed because the CCTyper database was missing.
+- Native Windows conda could not solve the full CCTyper environment because the bioconda dependency stack is Linux-oriented.
+
+Current missing pieces for local CCTyper annotation:
+
+- Prodigal
+- HMMER / `hmmsearch`
+- MinCED
+- CCTyper database
+
+Preferred reproducible path for annotation is Linux/WSL or another Linux environment:
+
+```bash
+conda env create -f envs/cctyper-linux.yml
+conda activate crispr-cctyper
+cctyper genome.fa output_dir --no_plot --simplelog -t 4
+```
+
+CCTyper's official quick start uses:
+
+```bash
+conda create -n cctyper -c conda-forge -c bioconda -c russel88 cctyper
+```
+
+This route is preferred because CCTyper's maintainers state conda installs the software, dependencies, and database together.
+
 ## First Model Features
 
 Start with:

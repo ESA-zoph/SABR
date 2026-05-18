@@ -1,0 +1,7 @@
+name: crispr-cctyper
+channels:
+  - conda-forge
+  - bioconda
+  - russel88
+dependencies:
+  - cctyper

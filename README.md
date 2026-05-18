@@ -48,6 +48,17 @@ python -m crispr_phage_predictor.ml.train_classifier data/training/repeats_cas_t
 
 This compares the nearest-repeat baseline and the first random-forest repeat/array classifier, then prints accuracy, classification reports, and confusion matrices. This is an early sanity check; final evaluation should use genome/species/genus holdout splits.
 
+## CCTyper Annotation Environment
+
+For generating training labels from CCTyper, use a Linux/WSL conda environment:
+
+```bash
+conda env create -f envs/cctyper-linux.yml
+conda activate crispr-cctyper
+```
+
+Then run CCTyper on genomes and collect the output folders using the training-data commands documented in `data/training/README.md`.
+
 ## Run GUI
 
 ```bash

@@ -27,6 +27,14 @@ Before running CCTyper locally, check dependencies:
 python -m crispr_phage_predictor.ml.check_cctyper_environment
 ```
 
+For CCTyper annotation, the preferred environment is Linux/WSL:
+
+```bash
+conda env create -f envs/cctyper-linux.yml
+conda activate crispr-cctyper
+cctyper genome.fa output_dir --no_plot --simplelog -t 4
+```
+
 Required columns are defined in `crispr_phage_predictor.ml.dataset`.
 
 Initial dataset policy:
