@@ -21,6 +21,14 @@ class CasSubtypePrediction:
     probabilities: dict[str, float]
 
 
+@dataclass(frozen=True)
+class SimilarityPrediction:
+    cas_subtype: str
+    confidence: float
+    best_identity: float
+    matched_repeat: str
+
+
 class RepeatCasSubtypeClassifier:
     """Baseline repeat/array feature classifier for CRISPR-Cas subtype."""
 
@@ -99,6 +107,63 @@ class RepeatCasSubtypeClassifier:
             ]
         )
         return self.predict_table(table)[0]
+
+
+class NearestRepeatClassifier:
+    """Interpretable nearest-repeat baseline for Cas subtype prediction."""
+
+    def __init__(self) -> None:
+        self._examples: list[tuple[str, str]] = []
+
+    @property
+    def is_fitted(self) -> bool:
+        return bool(self._examples)
+
+    def fit(self, training_table: pd.DataFrame) -> "NearestRepeatClassifier":
+        self._examples = [
+            (str(row["repeat_sequence"]).upper(), str(row["cas_subtype"]))
+            for _, row in training_table.iterrows()
+            if str(row.get("repeat_sequence", "")).strip()
+            and str(row.get("cas_subtype", "")).strip()
+        ]
+        if not self._examples:
+            raise ValueError("At least one labeled repeat is required")
+        return self
+
+    def predict_table(self, training_like_table: pd.DataFrame) -> list[SimilarityPrediction]:
+        if not self.is_fitted:
+            raise ValueError("Classifier must be fitted before prediction")
+        return [
+            self.predict_one(str(row["repeat_sequence"]).upper())
+            for _, row in training_like_table.iterrows()
+        ]
+
+    def predict_one(self, repeat_sequence: str) -> SimilarityPrediction:
+        if not self.is_fitted:
+            raise ValueError("Classifier must be fitted before prediction")
+        query = repeat_sequence.upper()
+        scored = [
+            (_global_identity(query, repeat), repeat, subtype)
+            for repeat, subtype in self._examples
+        ]
+        scored.sort(key=lambda item: item[0], reverse=True)
+        best_identity, matched_repeat, cas_subtype = scored[0]
+        return SimilarityPrediction(
+            cas_subtype=cas_subtype,
+            confidence=best_identity,
+            best_identity=best_identity,
+            matched_repeat=matched_repeat,
+        )
+
+
+def _global_identity(left: str, right: str) -> float:
+    if not left and not right:
+        return 1.0
+    max_length = max(len(left), len(right))
+    if max_length == 0:
+        return 0.0
+    matches = sum(1 for left_base, right_base in zip(left, right) if left_base == right_base)
+    return matches / max_length
 
 
 CasTypeClassifier = RepeatCasSubtypeClassifier

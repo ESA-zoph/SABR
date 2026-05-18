@@ -140,12 +140,12 @@ It currently:
 - loads the local repeat/Cas training CSV
 - filters to high-confidence labels by default
 - creates a train/test split
-- trains the baseline random forest classifier
-- prints accuracy, a classification report, and a confusion matrix
+- evaluates nearest-repeat similarity and random forest methods
+- prints accuracy, a classification report, and a confusion matrix for each method
 
 Use `--include-medium-confidence` to evaluate all validated rows.
 
-This is an initial sanity-check evaluator. Publication-quality evaluation still needs genome/species/genus holdout splitting.
+This is an initial sanity-check evaluator. Publication-quality evaluation still needs additional methods, repeated splits, and genome/species/genus holdout splitting.
 
 ## PAM/PFS Plan
 

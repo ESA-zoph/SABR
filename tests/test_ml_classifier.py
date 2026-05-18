@@ -1,6 +1,6 @@
 import unittest
 
-from crispr_phage_predictor.ml.classifier import RepeatCasSubtypeClassifier
+from crispr_phage_predictor.ml.classifier import NearestRepeatClassifier, RepeatCasSubtypeClassifier
 from crispr_phage_predictor.ml.dataset import empty_repeat_cas_training_table
 
 
@@ -55,6 +55,27 @@ class RepeatCasSubtypeClassifierTests(unittest.TestCase):
 
     def test_requires_fit_before_prediction(self):
         classifier = RepeatCasSubtypeClassifier(kmer_sizes=(2,), n_estimators=10)
+
+        with self.assertRaises(ValueError):
+            classifier.predict_one("AAAAAAAAAAAAAAAAAAAAAAAAAAAA")
+
+
+class NearestRepeatClassifierTests(unittest.TestCase):
+    def test_predicts_subtype_from_nearest_repeat(self):
+        training = empty_repeat_cas_training_table()
+        training.loc[0] = _training_row("g1", "AAAAAAAAAAAAAAAAAAAAAAAAAAAA", "I-E")
+        training.loc[1] = _training_row("g2", "CCCCCCCCCCCCCCCCCCCCCCCCCCCC", "I-F")
+
+        classifier = NearestRepeatClassifier()
+        classifier.fit(training)
+        prediction = classifier.predict_one("AAAAAAAATAAAAAAAAAAAAAAAAAAA")
+
+        self.assertEqual(prediction.cas_subtype, "I-E")
+        self.assertGreater(prediction.best_identity, 0.9)
+        self.assertEqual(prediction.confidence, prediction.best_identity)
+
+    def test_requires_fit_before_similarity_prediction(self):
+        classifier = NearestRepeatClassifier()
 
         with self.assertRaises(ValueError):
             classifier.predict_one("AAAAAAAAAAAAAAAAAAAAAAAAAAAA")

@@ -1,7 +1,7 @@
 import unittest
 
 from crispr_phage_predictor.ml.dataset import empty_repeat_cas_training_table
-from crispr_phage_predictor.ml.train_classifier import evaluate_classifier
+from crispr_phage_predictor.ml.train_classifier import evaluate_classifier, evaluate_methods
 
 
 def _row(genome_id: str, repeat: str, subtype: str) -> dict[str, object]:
@@ -42,10 +42,28 @@ class TrainClassifierTests(unittest.TestCase):
 
         result = evaluate_classifier(table, test_size=0.34, random_state=1)
 
+        self.assertEqual(result.method, "random_forest")
         self.assertEqual(result.train_size + result.test_size, 6)
         self.assertGreaterEqual(result.accuracy, 0.0)
         self.assertIn("I-E", result.labels)
         self.assertIn("I-F", result.labels)
+
+    def test_compares_nearest_repeat_and_random_forest(self):
+        table = empty_repeat_cas_training_table()
+        rows = [
+            _row("g1", "AAAAAAAAAAAAAAAAAAAAAAAAAAAA", "I-E"),
+            _row("g2", "AAAAAAAATAAAAAAAAAAAAAAAAAAA", "I-E"),
+            _row("g3", "AAAAAAAAGAAAAAAAAAAAAAAAAAAA", "I-E"),
+            _row("g4", "CCCCCCCCCCCCCCCCCCCCCCCCCCCC", "I-F"),
+            _row("g5", "CCCCCCCCGCCCCCCCCCCCCCCCCCCC", "I-F"),
+            _row("g6", "CCCCCCCCTCCCCCCCCCCCCCCCCCCC", "I-F"),
+        ]
+        for index, row in enumerate(rows):
+            table.loc[index] = row
+
+        results = evaluate_methods(table, test_size=0.34, random_state=1)
+
+        self.assertEqual([result.method for result in results], ["nearest_repeat", "random_forest"])
 
 
 if __name__ == "__main__":

@@ -46,7 +46,7 @@ After creating a repeat/Cas training CSV at `data/training/repeats_cas_types.csv
 python -m crispr_phage_predictor.ml.train_classifier data/training/repeats_cas_types.csv
 ```
 
-This trains the first baseline repeat/array classifier and prints accuracy, a classification report, and a confusion matrix. This is an early sanity check; final evaluation should use genome/species/genus holdout splits.
+This compares the nearest-repeat baseline and the first random-forest repeat/array classifier, then prints accuracy, classification reports, and confusion matrices. This is an early sanity check; final evaluation should use genome/species/genus holdout splits.
 
 ## Run GUI
 
