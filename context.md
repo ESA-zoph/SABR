@@ -168,6 +168,7 @@ Implemented dataset scaffolding now includes:
 - tests for schema validation and CCTyper conversion
 - repeat feature extraction for model-ready numeric tables
 - baseline random-forest repeat/array classifier for Cas subtype prediction
+- command-line train/test evaluator for the baseline classifier
 
 The first model should use repeat and array features only:
 

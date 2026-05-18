@@ -127,6 +127,26 @@ Current behavior:
 
 This is a baseline model, not a final scientific classifier. It should be compared against nearest-repeat similarity and evaluated with genome/species/genus holdout splits before interpretation.
 
+## Training/Evaluation Command
+
+The first CLI evaluator is:
+
+```powershell
+python -m crispr_phage_predictor.ml.train_classifier data/training/repeats_cas_types.csv
+```
+
+It currently:
+
+- loads the local repeat/Cas training CSV
+- filters to high-confidence labels by default
+- creates a train/test split
+- trains the baseline random forest classifier
+- prints accuracy, a classification report, and a confusion matrix
+
+Use `--include-medium-confidence` to evaluate all validated rows.
+
+This is an initial sanity-check evaluator. Publication-quality evaluation still needs genome/species/genus holdout splitting.
+
 ## PAM/PFS Plan
 
 After subtype prediction exists, add a curated PAM/PFS rule table keyed by subtype. PAM support should be reported as evidence categories such as compatible, weak, absent, or not evaluated rather than as definitive resistance.
