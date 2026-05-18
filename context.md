@@ -166,6 +166,7 @@ Implemented dataset scaffolding now includes:
 - high-confidence label filtering
 - CCTyper `crisprs_near_cas.tab`-style importer into the local schema
 - tests for schema validation and CCTyper conversion
+- repeat feature extraction for model-ready numeric tables
 
 The first model should use repeat and array features only:
 

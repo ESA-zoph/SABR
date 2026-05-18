@@ -99,6 +99,16 @@ Start with:
 
 Do not use organism or taxonomy as first-model features because they can cause shortcut learning.
 
+Implemented feature extraction currently creates:
+
+- `repeat_length`
+- `repeat_gc_percent`
+- `spacer_count`
+- `mean_spacer_length`
+- normalized DNA 2-mer, 3-mer, and 4-mer frequencies by default
+
+The feature table keeps `genome_id`, `contig_id`, `cas_type`, and `cas_subtype` for audit/labels, but `feature_columns()` excludes them from model inputs.
+
 ## Validation
 
 Validation should hold out whole genomes, species, or genera. Random array-level splitting is likely to overestimate performance because closely related genomes can share repeat families.
