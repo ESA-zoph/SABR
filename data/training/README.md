@@ -117,6 +117,18 @@ python -m crispr_phage_predictor.ml.import_crisprcasdb_repeats data/training/ext
 This inventory is useful for coverage audits and future joins against the SQL
 dump, but it is not a Cas type/subtype training table by itself.
 
+To build a computational candidate repeat/Cas table from the extracted
+CRISPRCasdb SQL dump:
+
+```bash
+python -m crispr_phage_predictor.ml.import_crisprcasdb_sql data/training/external_sources/crisprcasdb_34/home/pa.charbit/20220414_ccpp_recette_chromo_complete.sql --output data/training/repeats_cas_types_crisprcasdb_sql_candidate.csv
+```
+
+The importer links each CRISPR locus to the nearest same-sequence Cas cluster
+within a configurable distance threshold and keeps only unambiguous
+`CAS-Type...` subtype labels. Treat the output as computational candidates,
+not curated gold labels.
+
 ## Dataset Policy
 
 - Keep source provenance for every row.

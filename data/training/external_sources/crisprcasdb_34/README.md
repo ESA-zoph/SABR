@@ -46,6 +46,17 @@ This creates an unlabeled direct-repeat inventory. It is intentionally not a
 Cas-type training table until repeat/locus records are joined to defensible
 Cas-cluster or curated label metadata.
 
+The SQL dump can also be converted into a computational candidate repeat/Cas
+label table by linking each CRISPR locus to its nearest same-sequence Cas
+cluster:
+
+```bash
+python -m crispr_phage_predictor.ml.import_crisprcasdb_sql data/training/external_sources/crisprcasdb_34/home/pa.charbit/20220414_ccpp_recette_chromo_complete.sql --output data/training/repeats_cas_types_crisprcasdb_sql_candidate.csv
+```
+
+This route is stricter than the raw FASTA inventory, but it is still a
+computational candidate source rather than a manually curated gold set.
+
 Caveats:
 
 - Treat as raw computational source data, not gold-standard training labels.

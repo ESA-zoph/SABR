@@ -1851,3 +1851,65 @@ Local inventory results:
   - rows: 28,712
 - Both output CSV files are derived data under `data/training/*.csv` and remain
   ignored by git.
+
+## Latest Implementation Status: CRISPRCasdb SQL Candidate Labels
+
+SQL dump structure:
+
+- `crisprlocus.drconsensus` points to a direct-repeat `region.id`.
+- `crisprlocus.sequence` and `clustercas.sequence` share the same sequence UUID.
+- `clustercas.class` contains labels such as `CAS-TypeI-F`,
+  `CAS-TypeIII-B`, and ambiguous `CAS`.
+- `crisprlocus_region` links each locus to repeat/spacer `region` rows.
+- `sequence.strain` links to `strain`, which provides GenBank/RefSeq accessions
+  and assembly status.
+
+Implemented:
+
+- `crispr_phage_predictor.ml.import_crisprcasdb_sql`
+  builds computational candidate repeat/Cas rows from the extracted PostgreSQL
+  dump.
+- Conservative filters:
+  - CRISPR locus evidence level >= 4 by default.
+  - valid direct-repeat consensus sequence.
+  - unambiguous `CAS-Type...` cluster subtype.
+  - nearest same-sequence Cas cluster within 20,000 bp by default.
+  - spacer count and mean spacer length derived from linked region rows.
+- Output is in the standard SABR repeat/Cas table schema but must be treated as
+  computational candidates, not curated gold labels.
+
+Current command:
+
+```powershell
+.\.venv\Scripts\python.exe -m crispr_phage_predictor.ml.import_crisprcasdb_sql data\training\external_sources\crisprcasdb_34\home\pa.charbit\20220414_ccpp_recette_chromo_complete.sql --output data\training\repeats_cas_types_crisprcasdb_sql_candidate.csv
+```
+
+Local output:
+
+- `data/training/repeats_cas_types_crisprcasdb_sql_candidate.csv`
+- Rows: 23,507.
+- File size: about 6.7 MB.
+- Top subtype counts:
+  - `I-E`: 10,982
+  - `I-F`: 2,172
+  - `I-C`: 1,847
+  - `III-A`: 1,637
+  - `I-B`: 1,517
+  - `II-C`: 1,451
+  - `II-A`: 1,106
+  - `III-B`: 833
+  - `I-A`: 545
+  - `III-D`: 422
+- Type counts:
+  - Type I: 17,689
+  - Type III: 2,944
+  - Type II: 2,612
+  - Type V: 135
+  - Type VI: 127
+
+Interpretation:
+
+- This gives a large, traceable computational candidate source that may help
+  Type III coverage.
+- It is still not manually curated truth and should be used separately from
+  gold seed rows in reports and validation.
