@@ -31,10 +31,20 @@ class RepeatFeatureTests(unittest.TestCase):
 
         self.assertEqual(features.loc[0, "repeat_length"], 8)
         self.assertEqual(features.loc[0, "repeat_gc_percent"], 50.0)
+        self.assertEqual(features.loc[0, "repeat_at_percent"], 50.0)
         self.assertEqual(features.loc[0, "spacer_count"], 3)
+        self.assertEqual(features.loc[0, "repeat_count"], 4)
         self.assertEqual(features.loc[0, "mean_spacer_length"], 32.5)
+        self.assertEqual(features.loc[0, "min_spacer_length"], 32.5)
+        self.assertEqual(features.loc[0, "max_spacer_length"], 32.5)
+        self.assertEqual(features.loc[0, "median_spacer_length"], 32.5)
+        self.assertEqual(features.loc[0, "spacer_repeat_length_ratio"], 32.5 / 8)
         self.assertAlmostEqual(features.loc[0, "kmer_2_AC"], 2 / 7)
         self.assertAlmostEqual(features.loc[0, "kmer_2_GT"], 2 / 7)
+        self.assertIn("repeat_start_4_A_fraction", features.columns)
+        self.assertIn("terminal_kmer_2_AC", features.columns)
+        self.assertIn("repeat_self_rc_identity", features.columns)
+        self.assertIn("repeat_hairpin_score", features.columns)
         self.assertEqual(features.loc[0, "cas_subtype"], "I-E")
 
     def test_feature_columns_exclude_labels_and_ids(self):
@@ -63,6 +73,7 @@ class RepeatFeatureTests(unittest.TestCase):
         columns = feature_columns(features)
 
         self.assertIn("repeat_length", columns)
+        self.assertIn("repeat_hairpin_score", columns)
         self.assertIn("kmer_2_AA", columns)
         self.assertNotIn("genome_id", columns)
         self.assertNotIn("cas_subtype", columns)

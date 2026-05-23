@@ -1,6 +1,6 @@
-# CRISPR-Phage Resistance Predictor
+# SABR CRISPR Targeting Evidence Mapper
 
-Early-stage bioinformatics tool for estimating hypothetical CRISPR-mediated bacterial resistance against bacteriophages.
+Early-stage bioinformatics tool for mapping candidate CRISPR spacer targeting evidence against bacteriophages and inferring likely CRISPR-Cas type/subtype from repeat and array features.
 
 ## Current Status
 This repository is a scaffold. The first goal is to build a reproducible GUI pipeline that can:
@@ -12,7 +12,7 @@ This repository is a scaffold. The first goal is to build a reproducible GUI pip
 - detect candidate exact-repeat CRISPR arrays
 - extract candidate spacers
 - match extracted spacers exactly against phage genomes
-- show a bacteria-by-phage heatmap as the main result
+- show a bacteria-by-phage spacer-targeting evidence heatmap as the main result
 - prepare Cas typing, PAM analysis, and scoring modules
 
 See `context.md` for the scientific scope and project decisions.
@@ -23,7 +23,7 @@ See `context.md` for the scientific scope and project decisions.
 3. Cross all bacterial spacers against all phage genomes.
 4. Predict CRISPR-Cas type/subtype using repeat, array, and cas-gene features.
 5. Select candidate PAM rules based on predicted system type.
-6. Produce bacteria-by-phage resistance likelihood scores.
+6. Produce bacteria-by-phage CRISPR targeting evidence scores.
 
 ## Install
 Create a virtual environment, then install dependencies:
@@ -36,6 +36,12 @@ Machine-learning dependencies are kept separate so the GUI remains easier to dep
 
 ```bash
 pip install -r requirements-ml.txt
+```
+
+Optional external-backend dependencies are also separate:
+
+```bash
+pip install -r requirements-external.txt
 ```
 
 ## Train Baseline Cas-Subtype Classifier
@@ -79,6 +85,27 @@ http://127.0.0.1:8501
 
 After uploading files, first check the upload diagnostics table. It should show at least one parsed record for each bacterial and phage file. Then press **Run CRISPR-phage analysis** in the sidebar.
 
+Each completed GUI analysis writes a timestamped local output folder under
+`outputs/runs/`. The saved files include run metadata, FASTA record summaries,
+candidate arrays, extracted spacers, spacer hits, the evidence matrix, and the
+heatmap table.
+
+The GUI supports optional external backends when they are available:
+
+- CRISPR detection: auto recommended, internal exact-repeat MVP, or MinCED-compatible
+- Spacer-phage matching: auto recommended, internal exact match, or BLASTN
+
+Auto recommended currently keeps CRISPR detection on the internal detector for
+responsive whole-genome uploads. MinCED-compatible detection can be selected
+manually for benchmarking when the Diced Python package or a `minced` command is
+available. For spacer-phage matching, auto recommended uses BLASTN when `blastn`
+and `makeblastdb` are available and otherwise falls back to the internal exact
+matcher. The internal methods remain available as reproducible baselines.
+
+When BLASTN is active, the sidebar exposes a minimum identity threshold and a
+full-spacer-alignment requirement. BLAST-derived hit tables include identity,
+alignment length, spacer coverage, e-value, and bitscore.
+
 ## Current CRISPR Detection Method
 The first detector is a transparent MVP baseline. It identifies exact direct repeats of CRISPR-like length separated by plausible spacer lengths. This is useful for early development and benchmarking, but it is not yet a replacement for established CRISPR callers.
 
@@ -86,4 +113,4 @@ The first detector is a transparent MVP baseline. It identifies exact direct rep
 The first matcher searches every extracted spacer against every uploaded phage genome on both strands. It reports exact spacer-protospacer hits and a bacteria-by-phage evidence matrix. Approximate matching, PAM analysis, and Cas-type-aware scoring are planned next.
 
 ## Important Scientific Note
-The tool should report evidence-based hypothetical CRISPR targeting or resistance likelihood, not definitive biological resistance. Experimental validation remains necessary.
+The tool reports evidence-based candidate CRISPR targeting, not definitive biological resistance. Spacer matches, repeat-derived Cas subtype calls, PAM/PFS support, and seed summaries are useful evidence layers, but experimental validation remains necessary before claiming resistance.

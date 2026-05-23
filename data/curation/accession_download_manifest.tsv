@@ -1,0 +1,15 @@
+record_type	organism_or_phage	strain_or_isolate	accession	priority	reason	local_status
+bacterium	Pseudomonas aeruginosa	PA14	NC_008463.1	high	Validated PA14/JBD CRISPR resistance host.	present
+phage	Pseudomonas phage	JBD18	JX495041.1	high	Validated PA14 CRISPR-sensitive phage.	present
+phage	Pseudomonas phage	JBD25	JX495042.1	high	Validated PA14 CRISPR-sensitive phage.	present
+phage	Pseudomonas phage	JBD67	JX495043.1	high	Validated PA14 CRISPR-sensitive phage.	present
+phage	Pseudomonas phage	DMS3	DQ631426.1	medium	PA14 CRISPR/anti-CRISPR challenge control; deduplicate with NC_008717.	present_duplicate
+bacterium	Streptococcus thermophilus	DGCC7710	CP025216.1	high	Core S. thermophilus CRISPR-phage model host.	present
+phage	Streptococcus phage	2972	AY699705.1	high	DGCC7710 CRISPR/PAM caution and BIM model phage.	present
+phage	Streptococcus phage	858	NC_010353.1	medium	Used in CRISPR spacer acquisition/protospacer studies.	present
+phage	Streptococcus phage	DT1	AF085222	high	Used in S. thermophilus CRISPR spacer/protospacer studies; missing from original examples.	downloaded_curation
+bacterium	Streptococcus thermophilus	SMQ-301	CP011217	medium	Non-host or host-range control for 2972/DT1 systems; complete genome now downloaded for curation.	downloaded_curation
+bacterium	Streptococcus thermophilus	LMD-9	NC_008532	medium	Comparative complete S. thermophilus genome for CRISPR/phage specificity challenge testing.	downloaded_curation
+bacterium	Sulfolobus islandicus	REY15A	NC_017276.1	medium	Candidate archaeal CRISPR/SIRV system.	present
+bacterium	Sulfolobus solfataricus	P2	NC_002754.1	medium	Candidate archaeal CRISPR/SIRV system.	present
+phage	Sulfolobus islandicus rod-shaped virus	SIRV2	NC_004087.1	medium	Candidate archaeal CRISPR/SIRV target.	present

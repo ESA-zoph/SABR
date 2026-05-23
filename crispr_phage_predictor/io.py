@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import gzip
+import hashlib
+import re
 from dataclasses import dataclass
 from io import StringIO
 from typing import Iterable
@@ -27,6 +29,14 @@ class FastaRecord:
         seq = self.sequence.upper()
         gc_count = seq.count("G") + seq.count("C")
         return gc_count / len(seq)
+
+    @property
+    def sequence_hash(self) -> str:
+        return sequence_hash(self.sequence)
+
+    @property
+    def accession(self) -> str:
+        return extract_accession(self.record_id, self.description)
 
 
 @dataclass(frozen=True)
@@ -78,11 +88,119 @@ def summarize_records(records: list[FastaRecord]) -> pd.DataFrame:
             "record_id": record.record_id,
             "length_bp": record.length,
             "gc_percent": round(record.gc_fraction * 100, 2),
+            "accession": record.accession,
+            "sequence_hash": record.sequence_hash,
             "description": record.description,
         }
         for record in records
     ]
     return pd.DataFrame(rows)
+
+
+def deduplicate_records(records: list[FastaRecord]) -> list[FastaRecord]:
+    unique_records: list[FastaRecord] = []
+    seen_hashes: set[str] = set()
+    for record in records:
+        digest = record.sequence_hash
+        if digest in seen_hashes:
+            continue
+        seen_hashes.add(digest)
+        unique_records.append(record)
+    return unique_records
+
+
+def summarize_duplicate_records(records: list[FastaRecord]) -> pd.DataFrame:
+    groups: dict[str, list[FastaRecord]] = {}
+    for record in records:
+        groups.setdefault(record.sequence_hash, []).append(record)
+
+    rows = []
+    for digest, group in groups.items():
+        if len(group) < 2:
+            continue
+        kept = group[0]
+        duplicates = group[1:]
+        rows.append(
+            {
+                "sequence_hash": digest,
+                "accession": kept.accession,
+                "length_bp": kept.length,
+                "kept_source_file": kept.source_file,
+                "kept_record_id": kept.record_id,
+                "duplicate_count": len(duplicates),
+                "duplicate_records": "; ".join(
+                    f"{record.source_file}:{record.record_id}" for record in duplicates
+                ),
+            }
+        )
+    return pd.DataFrame(rows)
+
+
+def summarize_accession_conflicts(records: list[FastaRecord]) -> pd.DataFrame:
+    groups: dict[str, list[FastaRecord]] = {}
+    for record in records:
+        if record.accession:
+            groups.setdefault(record.accession, []).append(record)
+
+    rows = []
+    for accession, group in groups.items():
+        hashes = {record.sequence_hash for record in group}
+        if len(hashes) <= 1:
+            continue
+        rows.append(
+            {
+                "accession": accession,
+                "record_count": len(group),
+                "distinct_sequence_hashes": len(hashes),
+                "records": "; ".join(
+                    f"{record.source_file}:{record.record_id}:{record.sequence_hash[:12]}"
+                    for record in group
+                ),
+            }
+        )
+    return pd.DataFrame(rows)
+
+
+def sequence_hash(sequence: str) -> str:
+    normalized = "".join(str(sequence).upper().split())
+    return hashlib.sha256(normalized.encode("ascii", errors="ignore")).hexdigest()
+
+
+def extract_accession(record_id: str, description: str = "") -> str:
+    candidates = [str(record_id or ""), str(description or "")]
+    for text in candidates:
+        accession = _extract_accession_from_text(text)
+        if accession:
+            return accession
+    return ""
+
+
+def _extract_accession_from_text(text: str) -> str:
+    normalized = text.strip()
+    if not normalized:
+        return ""
+    pipe_parts = normalized.split("|")
+    for part in pipe_parts:
+        accession = _match_accession_token(part)
+        if accession:
+            return accession
+    for token in re.split(r"\s+", normalized):
+        accession = _match_accession_token(token)
+        if accession:
+            return accession
+    return ""
+
+
+def _match_accession_token(token: str) -> str:
+    cleaned = token.strip().strip(",;()[]")
+    patterns = [
+        r"^[A-Z]{1,2}_\d{5,9}(?:\.\d+)?$",
+        r"^[A-Z]{1,4}\d{5,9}(?:\.\d+)?$",
+    ]
+    for pattern in patterns:
+        if re.match(pattern, cleaned):
+            return cleaned
+    return ""
 
 
 def _decode_uploaded_file(uploaded_file) -> str:

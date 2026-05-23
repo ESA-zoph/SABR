@@ -18,8 +18,30 @@ class SpacerHit:
     strand: str
     identity: float
     mismatches: int
+    alignment_length: int
+    spacer_length: int
+    coverage: float
+    evalue: float | None
+    bitscore: float | None
     spacer_sequence: str
     protospacer_sequence: str
+    protospacer_5p_flank: str = ""
+    protospacer_3p_flank: str = ""
+    genomic_upstream_flank: str = ""
+    genomic_downstream_flank: str = ""
+    predicted_cas_subtype: str = ""
+    cas_subtype_confidence: float | None = None
+    cas_subtype_prediction_method: str = ""
+    pam_rule: str = ""
+    pam_rule_source: str = ""
+    pam_sequence: str = ""
+    pam_match: bool | None = None
+    pam_support_level: str = "not_evaluated"
+    pam_compatibility_score: float | None = None
+    seed_region: str = ""
+    seed_length: int | None = None
+    seed_mismatches: int | None = None
+    seed_mismatch_positions: str = ""
 
 
 def find_spacer_hits(
@@ -106,6 +128,14 @@ def _scan_one_strand(
         match_index = phage_sequence.find(query, start_index)
         if match_index == -1:
             break
+        start = match_index + 1
+        end = match_index + len(query)
+        context = extract_protospacer_context(
+            phage_sequence=phage_sequence,
+            start=start,
+            end=end,
+            strand=strand,
+        )
         hits.append(
             SpacerHit(
                 bacterium_id=bacterium_id,
@@ -113,17 +143,135 @@ def _scan_one_strand(
                 phage_id=phage_id,
                 spacer_id=spacer_id,
                 phage_contig_id=phage_contig_id,
-                start=match_index + 1,
-                end=match_index + len(query),
+                start=start,
+                end=end,
                 strand=strand,
                 identity=1.0,
                 mismatches=0,
+                alignment_length=len(query),
+                spacer_length=len(spacer_sequence),
+                coverage=1.0,
+                evalue=None,
+                bitscore=None,
                 spacer_sequence=spacer_sequence,
                 protospacer_sequence=phage_sequence[match_index : match_index + len(query)],
+                protospacer_5p_flank=context.protospacer_5p_flank,
+                protospacer_3p_flank=context.protospacer_3p_flank,
+                genomic_upstream_flank=context.genomic_upstream_flank,
+                genomic_downstream_flank=context.genomic_downstream_flank,
             )
         )
         start_index = match_index + 1
     return hits
+
+
+@dataclass(frozen=True)
+class ProtospacerContext:
+    protospacer_5p_flank: str
+    protospacer_3p_flank: str
+    genomic_upstream_flank: str
+    genomic_downstream_flank: str
+
+
+def extract_protospacer_context(
+    phage_sequence: str,
+    start: int,
+    end: int,
+    strand: str,
+    flank_length: int = 10,
+) -> ProtospacerContext:
+    """Return flanks around a one-based inclusive protospacer interval.
+
+    Genomic flanks are reported in phage-reference orientation. Protospacer
+    flanks are oriented relative to the strand matched by the spacer, which is
+    the orientation needed for PAM/PFS checks.
+    """
+    sequence = phage_sequence.upper()
+    zero_based_start = max(start - 1, 0)
+    zero_based_end = min(end, len(sequence))
+    upstream_start = max(zero_based_start - flank_length, 0)
+    downstream_end = min(zero_based_end + flank_length, len(sequence))
+
+    genomic_upstream = sequence[upstream_start:zero_based_start]
+    genomic_downstream = sequence[zero_based_end:downstream_end]
+
+    if strand == "-":
+        protospacer_5p = reverse_complement(genomic_downstream)
+        protospacer_3p = reverse_complement(genomic_upstream)
+    else:
+        protospacer_5p = genomic_upstream
+        protospacer_3p = genomic_downstream
+
+    return ProtospacerContext(
+        protospacer_5p_flank=protospacer_5p,
+        protospacer_3p_flank=protospacer_3p,
+        genomic_upstream_flank=genomic_upstream,
+        genomic_downstream_flank=genomic_downstream,
+    )
+
+
+@dataclass(frozen=True)
+class SeedMismatchSummary:
+    seed_region: str
+    seed_length: int
+    seed_mismatches: int
+    seed_mismatch_positions: str
+
+
+def summarize_seed_mismatches(
+    spacer_sequence: str,
+    protospacer_sequence: str,
+    pam_rule: str | None,
+    seed_length: int = 8,
+) -> SeedMismatchSummary | None:
+    side = _pam_rule_side(pam_rule)
+    if not side:
+        return None
+    spacer = spacer_sequence.upper().replace("-", "")
+    protospacer = protospacer_sequence.upper().replace("-", "")
+    comparable_length = min(len(spacer), len(protospacer))
+    if comparable_length <= 0:
+        return None
+    effective_seed_length = min(seed_length, comparable_length)
+
+    if side == "5prime":
+        seed_start = 0
+        seed_end = effective_seed_length
+    else:
+        seed_start = comparable_length - effective_seed_length
+        seed_end = comparable_length
+
+    spacer_seed = spacer[seed_start:seed_end]
+    protospacer_seed = protospacer[seed_start:seed_end]
+    mismatch_positions = [
+        str(index)
+        for index, (spacer_base, protospacer_base) in enumerate(
+            zip(spacer_seed, protospacer_seed),
+            start=1,
+        )
+        if spacer_base != protospacer_base
+    ]
+    return SeedMismatchSummary(
+        seed_region=f"{side}:{seed_start + 1}-{seed_end}",
+        seed_length=effective_seed_length,
+        seed_mismatches=len(mismatch_positions),
+        seed_mismatch_positions=",".join(mismatch_positions),
+    )
+
+
+def _pam_rule_side(pam_rule: str | None) -> str:
+    if not pam_rule or ":" not in pam_rule:
+        return ""
+    side = pam_rule.split(":", maxsplit=1)[0].strip().upper()
+    if side in {"5", "5P", "5PRIME", "UPSTREAM"}:
+        return "5prime"
+    if side in {"3", "3P", "3PRIME", "DOWNSTREAM"}:
+        return "3prime"
+    if side in {"GENOMIC_5", "GENOMIC5", "GENOMIC_5P", "GENOMIC_5PRIME", "GENOMIC_UPSTREAM"}:
+        return "5prime"
+    if side in {"GENOMIC_3", "GENOMIC3", "GENOMIC_3P", "GENOMIC_3PRIME", "GENOMIC_DOWNSTREAM"}:
+        return "3prime"
+    return ""
 
 
 def reverse_complement(sequence: str) -> str:
