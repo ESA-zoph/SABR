@@ -2519,3 +2519,39 @@ Interpretation:
   regions involving Type III and some Type I subtypes.
 - This supports targeted future validation and data expansion for Type III-B,
   Type III-D, and neighboring Type I-B/I-C/I-A boundaries.
+
+## Current Next Step: Model Interpretability
+
+After the error-projection figures, the next best step is to explain what the
+CRISPRCasdb-trained ExtraTrees model is using to make predictions.
+
+Motivation:
+
+- The model is partly a black box, but ExtraTrees supports global feature
+  importance.
+- We need to show whether the strongest signals are:
+  - repeat k-mers
+  - terminal k-mers
+  - repeat length/composition
+  - spacer count and mean spacer length
+  - hairpin/reverse-complement features
+- We also need to understand whether Type III errors arise from weak features,
+  overlapping subtype biology, or noisy candidate labels.
+
+Recommended deliverables:
+
+1. Global feature-importance table and figure for the CRISPRCasdb-trained model.
+2. Permutation-importance table and figure on the held-out test set.
+3. Feature-category summary:
+   - k-mer
+   - terminal k-mer
+   - composition
+   - array statistics
+   - repeat-structure features
+4. Error-focused feature comparison:
+   - correct Type III-B vs `III-B -> I-B` errors
+   - correct Type III-D vs `III-D -> III-A/III-B` errors
+5. Add the strongest interpretability figures to `docs/SABR_manuscript.docx`.
+
+This should be done before any broader claim that SABR has learned biologically
+meaningful subtype features rather than only memorizing repeat-family patterns.
