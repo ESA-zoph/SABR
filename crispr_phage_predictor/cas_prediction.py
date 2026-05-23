@@ -15,7 +15,7 @@ from crispr_phage_predictor.ml.model_artifact import (
 
 
 DEFAULT_RUNTIME_TRAINING_TABLE = (
-    Path("data") / "training" / "repeats_cas_types_augmented_vink_genbank_targeted.csv"
+    Path("data") / "training" / "repeats_cas_types_crisprcasdb_sql_candidate.csv"
 )
 
 

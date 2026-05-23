@@ -168,6 +168,7 @@ def _plot_projection(
     plt.legend(loc="center left", bbox_to_anchor=(1.02, 0.5), fontsize=8, frameon=False)
     plt.tight_layout()
     plt.savefig(output_path, dpi=180)
+    plt.savefig(output_path.with_suffix(".svg"))
     plt.close()
 
 

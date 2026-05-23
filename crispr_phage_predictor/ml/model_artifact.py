@@ -16,7 +16,7 @@ from crispr_phage_predictor.ml.train_classifier import _filter_min_class_count
 
 DEFAULT_MODEL_PATH = Path("models") / "cas_subtype_extratrees.joblib"
 DEFAULT_TRAINING_TABLE = (
-    Path("data") / "training" / "repeats_cas_types_augmented_vink_genbank_targeted.csv"
+    Path("data") / "training" / "repeats_cas_types_crisprcasdb_sql_candidate.csv"
 )
 
 

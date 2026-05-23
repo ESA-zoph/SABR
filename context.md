@@ -2415,3 +2415,54 @@ Experimental model artifact:
 Validation:
 
 - Full local test suite passes: 82 tests.
+
+## Latest Runtime Decision: SABR Uses CRISPRCasdb-Trained Model Locally
+
+Runtime model decision:
+
+- The local default runtime artifact `models/cas_subtype_extratrees.joblib` was
+  regenerated from:
+  `data/training/repeats_cas_types_crisprcasdb_sql_candidate.csv`
+- Training rows after min-class filtering: 23,478.
+- Classes:
+  `I-A`, `I-B`, `I-C`, `I-D`, `I-E`, `I-F`, `I-G`, `II-A`, `II-B`,
+  `II-C`, `III-A`, `III-B`, `III-C`, `III-D`, `V-A`, `V-K`, `VI-B1`.
+- The model binary is about 410 MB and remains ignored by git under
+  `models/*.joblib`.
+- Source defaults were updated so future `export_model` runs also use the
+  CRISPRCasdb SQL candidate table by default:
+  - `crispr_phage_predictor/ml/model_artifact.py`
+  - fallback nearest-repeat table in `crispr_phage_predictor/cas_prediction.py`
+
+Caveat:
+
+- This is now the local runtime model because it has the best internal and
+  transfer performance so far.
+- Manuscript language should still call it CRISPRCasdb-trained / computationally
+  derived until independent curated or CCTyper-supported validation is added.
+
+## Latest Manuscript Export
+
+Generated manuscript Word document:
+
+- `docs/SABR_manuscript.docx`
+- Embeds PNG versions of the main figures for Word compatibility.
+- Matching SVG files are stored under `docs/manuscript_assets/`.
+
+New manuscript helper scripts:
+
+- `docs/generate_manuscript_summary_figures.py`
+- `docs/generate_manuscript_docx.py`
+
+SVG manuscript figures generated:
+
+- `benchmark_score_summary.svg`
+- `model_comparison_summary.svg`
+- `calibration_comparison.svg`
+- `typeiii_performance_summary.svg`
+- PCA subtype/source SVGs.
+- sampled t-SNE subtype/source SVGs.
+
+Validation:
+
+- Full local test suite passes: 83 tests.
