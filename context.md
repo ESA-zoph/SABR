@@ -2193,3 +2193,62 @@ Interpretation:
   - conflict filtering and calibration
   - checking whether performance transfers to uploaded genomes outside the
     CRISPRCasdb distribution
+
+## Latest Modeling Experiment: External Dataset Transfer Between Current and CRISPRCasdb Tables
+
+Question:
+
+- If CRISPRCasdb-only looks better internally, does it transfer to the current
+  SABR training table?
+- Conversely, does the current model transfer to CRISPRCasdb candidate rows?
+
+Implemented:
+
+- `crispr_phage_predictor.ml.evaluate_external_dataset`
+- Trains ExtraTrees on one repeat/Cas table and evaluates on another.
+- Test rows with labels absent from the training classes are excluded and
+  reported.
+
+CRISPRCasdb train -> current table test:
+
+- Training table:
+  `data/training/repeats_cas_types_crisprcasdb_sql_candidate.csv`
+- Train rows after min-class filtering: 23,478.
+- Raw current-table test rows: 4,884.
+- Evaluated current-table test rows: 4,806.
+- Excluded rows: 78.
+- Excluded subtypes: `I-U`, `I-V`, `V-B`, `VI-A`, `VI-C`.
+- Accuracy: 0.9811.
+- Type III:
+  - `III-A` f1/recall: 0.91 / 0.94
+  - `III-B` f1/recall: 0.93 / 0.96
+  - `III-D` f1/recall: 0.89 / 0.87
+
+Current table train -> CRISPRCasdb test:
+
+- Training table:
+  `data/training/repeats_cas_types_augmented_vink_genbank_targeted.csv`
+- Train rows after min-class filtering: 4,848.
+- Raw CRISPRCasdb test rows: 23,507.
+- Evaluated CRISPRCasdb test rows: 22,981.
+- Excluded rows: 526.
+- Excluded subtypes: `I-G`, `III-C`, `V-B`, `V-B1`, `V-F4`, `V-K`,
+  `VI-A`, `VI-C`.
+- Accuracy: 0.9559.
+- Type III:
+  - `III-A` f1/recall: 0.93 / 0.90
+  - `III-B` f1/recall: 0.69 / 0.57
+  - `III-D` f1/recall: 0.70 / 0.59
+
+Interpretation:
+
+- CRISPRCasdb-trained ExtraTrees transfers very well to rows in the current
+  table whose subtypes exist in CRISPRCasdb training.
+- The current table also transfers well to CRISPRCasdb rows, but is weaker for
+  `III-B` and `III-D`.
+- These numbers are encouraging but not a fully independent biological
+  validation because the current table and CRISPRCasdb candidates share
+  database ancestry.
+- The result supports training an experimental CRISPRCasdb-only runtime model
+  artifact, but final replacement should wait for curated/literature/CCTyper
+  external validation and probability calibration.
