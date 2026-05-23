@@ -152,6 +152,15 @@ Initial evaluation showed that the balanced CRISPRCasdb augmentation improved
 `III-A` recall but reduced overall genus-holdout accuracy. Treat it as an
 experiment source, not the production training table.
 
+For a Type III-targeted experiment:
+
+```bash
+python -m crispr_phage_predictor.ml.build_crisprcasdb_augmented_dataset data/training/repeats_cas_types_augmented_vink_genbank_targeted.csv data/training/repeats_cas_types_crisprcasdb_sql_candidate.csv --include-subtypes III-A,III-B,III-C,III-D --output data/training/repeats_cas_types_augmented_crisprcasdb_typeiii_balanced.csv --candidate-output data/training/repeats_cas_types_crisprcasdb_typeiii_balanced_additions.csv
+```
+
+The Type III-targeted experiment improved `III-A` but did not improve `III-B`
+or `III-D`; keep it as an experiment source for now.
+
 ## Dataset Policy
 
 - Keep source provenance for every row.

@@ -2032,3 +2032,49 @@ Interpretation:
 Tracked comparison artifact:
 
 - `docs/crisprcasdb_augmented_model_comparison.csv`
+
+## Latest Modeling Experiment: Type III-Only CRISPRCasdb Augmentation
+
+Built Type III-targeted augmented table:
+
+- Builder option:
+  `--include-subtypes III-A,III-B,III-C,III-D`
+- Output:
+  `data/training/repeats_cas_types_augmented_crisprcasdb_typeiii_balanced.csv`
+- Candidate additions:
+  `data/training/repeats_cas_types_crisprcasdb_typeiii_balanced_additions.csv`
+- Added rows: 714.
+- Total rows: 5,598.
+
+Evaluation:
+
+- rows used after min-class filtering: 5,578
+- split: genus holdout
+- method: ExtraTrees
+- include medium-confidence labels: yes
+- accuracy: 0.9004
+
+Type III comparison:
+
+- `III-A`:
+  - current best f1/recall: 0.58 / 0.43
+  - all-subtype CRISPRCasdb f1/recall: 0.68 / 0.66
+  - Type III-only CRISPRCasdb f1/recall: 0.76 / 0.86
+- `III-B`:
+  - current best f1/recall: 0.59 / 0.57
+  - all-subtype CRISPRCasdb f1/recall: 0.55 / 0.48
+  - Type III-only CRISPRCasdb f1/recall: 0.49 / 0.57
+- `III-D`:
+  - current best f1/recall: 0.40 / 0.40
+  - all-subtype CRISPRCasdb f1/recall: 0.38 / 0.32
+  - Type III-only CRISPRCasdb f1/recall: 0.33 / 0.26
+
+Interpretation:
+
+- Type III-only augmentation strongly improves `III-A`.
+- It does not improve `III-B` or `III-D`, and overall accuracy drops more than
+  the all-subtype augmentation.
+- This suggests CRISPRCasdb candidates are useful for `III-A` specifically, but
+  not enough to resolve Type III broadly.
+- Next experiment should try `III-A`-only augmentation or stricter nearby-Cas
+  distance thresholds before considering any production model change.

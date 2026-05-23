@@ -74,3 +74,26 @@ def test_build_crisprcasdb_augmented_dataset_caps_per_subtype(tmp_path):
     )
 
     assert len(additions) == 2
+
+
+def test_build_crisprcasdb_augmented_dataset_can_filter_to_subtypes(tmp_path):
+    current_path = tmp_path / "current.csv"
+    candidate_path = tmp_path / "candidate.csv"
+    pd.DataFrame(
+        [_row("current-1", "GTTTCAATGCTGCTTCGCCTGCAATGGGTTTAGTAT", "I-F")]
+    ).to_csv(current_path, index=False)
+    pd.DataFrame(
+        [
+            _row("candidate-1", "CCAGCCGCCTTCAGGCGGCTGTGTGTTGAAAC", "I-E", source="candidate"),
+            _row("candidate-2", "GTTTTAGAGCTATGCTGTTTTGAATGGTCCCAAAAC", "III-A", source="candidate"),
+        ]
+    ).to_csv(candidate_path, index=False)
+
+    _, additions = build_crisprcasdb_augmented_dataset(
+        current_path,
+        candidate_path,
+        include_subtypes={"III-A", "III-B", "III-C", "III-D"},
+    )
+
+    assert len(additions) == 1
+    assert additions.iloc[0]["cas_subtype"] == "III-A"

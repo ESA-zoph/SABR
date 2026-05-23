@@ -1,3 +1,4 @@
 dataset,rows_used,split_strategy,group_column,method,min_class_count,include_medium_confidence,accuracy,iii_a_precision,iii_a_recall,iii_a_f1,iii_b_precision,iii_b_recall,iii_b_f1,iii_d_precision,iii_d_recall,iii_d_f1,notes
 current_best_vink_genbank_targeted,4848,group_holdout,genus,extra_trees,20,true,0.9152,0.88,0.43,0.58,0.62,0.57,0.59,0.40,0.40,0.40,current best baseline reproduced
 augmented_crisprcasdb_sql_balanced,8378,group_holdout,genus,extra_trees,20,true,0.9050,0.70,0.66,0.68,0.65,0.48,0.55,0.48,0.32,0.38,adds 3535 novel non-conflicting CRISPRCasdb SQL candidates capped at 500 per subtype
+augmented_crisprcasdb_typeiii_balanced,5578,group_holdout,genus,extra_trees,20,true,0.9004,0.68,0.86,0.76,0.43,0.57,0.49,0.44,0.26,0.33,adds 714 novel non-conflicting CRISPRCasdb SQL candidates restricted to III-A/III-B/III-C/III-D

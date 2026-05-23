@@ -18,6 +18,7 @@ def build_crisprcasdb_augmented_dataset(
     current_training_csv: str | Path,
     candidate_csv: str | Path,
     max_per_subtype: int = 500,
+    include_subtypes: set[str] | None = None,
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
     """Return current training rows plus filtered novel CRISPRCasdb candidates."""
     current = load_repeat_cas_training_table(current_training_csv).copy()
@@ -30,6 +31,8 @@ def build_crisprcasdb_augmented_dataset(
     novel = candidates[
         ~candidates["_repeat_hash"].isin(current_hashes | conflict_hashes)
     ].copy()
+    if include_subtypes is not None:
+        novel = novel[novel["cas_subtype"].isin(include_subtypes)].copy()
     balanced = _balanced_candidate_subset(novel, max_per_subtype=max_per_subtype)
     balanced["label_confidence"] = "computational_nearby_cas_cluster"
 
@@ -72,12 +75,22 @@ def main() -> None:
         default=500,
         help="Maximum novel CRISPRCasdb rows to add per subtype. Use 0 for no cap.",
     )
+    parser.add_argument(
+        "--include-subtypes",
+        default="",
+        help="Optional comma-separated subtype allowlist, for example III-A,III-B,III-C,III-D.",
+    )
     args = parser.parse_args()
 
     augmented, additions = build_crisprcasdb_augmented_dataset(
         args.current_training_csv,
         args.candidate_csv,
         max_per_subtype=args.max_per_subtype,
+        include_subtypes=(
+            {subtype.strip() for subtype in args.include_subtypes.split(",") if subtype.strip()}
+            if args.include_subtypes.strip()
+            else None
+        ),
     )
     output_path = Path(args.output)
     additions_path = Path(args.candidate_output)
