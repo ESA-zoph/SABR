@@ -19,7 +19,7 @@ Build an easy-to-deploy bioinformatics tool for the scientific community that re
 
 The tool should accept multiple bacterial FASTA files and multiple phage FASTA files, identify CRISPR arrays, extract spacers and repeats, compare spacers against phage genomes, infer possible PAM/PFS compatibility, and produce an evidence-based bacteria-by-phage CRISPR targeting matrix. Resistance should remain a later interpretation layer only when phenotype, literature, or benchmark evidence supports it.
 
-## Current Snapshot: 2026-05-21
+## Current Snapshot: 2026-05-23
 
 Current scientific framing:
 
@@ -32,11 +32,12 @@ Current best Cas subtype model:
 
 - Runtime artifact: `models/cas_subtype_extratrees.joblib`.
 - Method: ExtraTrees on repeat/array features.
-- Training table: `data/training/repeats_cas_types_augmented_vink_genbank_targeted.csv`.
-- Genus-holdout performance: accuracy 0.9152, 1112/1215 correct.
-- Strong subtypes include `I-E`, `I-F`, `II-A`, `II-C`, `I-C`, and `I-B`.
-- Weak subtypes remain Type III-heavy: `III-A`, `III-B`, `III-D`, plus small-sample `VI-B1`.
-- Caveat: the training table is mostly computational candidate data, not final gold-standard truth.
+- Training table: `data/training/repeats_cas_types_crisprcasdb_sql_candidate.csv`.
+- CRISPRCasdb-only genome-holdout performance: accuracy 0.9455.
+- Transfer to compatible rows in the current SABR table: accuracy 0.9811.
+- Reciprocal current-table-to-CRISPRCasdb transfer: accuracy 0.9559.
+- Weak/confusable regions remain Type III-heavy, especially `III-B`, `III-D`, and adjacent Type I-B/I-C/I-A boundaries.
+- Caveat: CRISPRCasdb SQL labels are computational candidates, not final gold-standard truth.
 
 Recent production behavior:
 
@@ -2520,38 +2521,67 @@ Interpretation:
 - This supports targeted future validation and data expansion for Type III-B,
   Type III-D, and neighboring Type I-B/I-C/I-A boundaries.
 
-## Current Next Step: Model Interpretability
+## Latest Model Interpretability
 
-After the error-projection figures, the next best step is to explain what the
-CRISPRCasdb-trained ExtraTrees model is using to make predictions.
+New script:
 
-Motivation:
+- `docs/generate_model_interpretability.py`
 
-- The model is partly a black box, but ExtraTrees supports global feature
-  importance.
-- We need to show whether the strongest signals are:
-  - repeat k-mers
-  - terminal k-mers
-  - repeat length/composition
-  - spacer count and mean spacer length
-  - hairpin/reverse-complement features
-- We also need to understand whether Type III errors arise from weak features,
-  overlapping subtype biology, or noisy candidate labels.
+Generated interpretability tables:
 
-Recommended deliverables:
+- `docs/interpretability/crisprcasdb_extratrees/builtin_feature_importance.csv`
+- `docs/interpretability/crisprcasdb_extratrees/permutation_feature_importance.csv`
+- `docs/interpretability/crisprcasdb_extratrees/feature_category_importance.csv`
+- `docs/interpretability/crisprcasdb_extratrees/typeiii_error_feature_summary.csv`
 
-1. Global feature-importance table and figure for the CRISPRCasdb-trained model.
-2. Permutation-importance table and figure on the held-out test set.
-3. Feature-category summary:
-   - k-mer
-   - terminal k-mer
-   - composition
-   - array statistics
-   - repeat-structure features
-4. Error-focused feature comparison:
-   - correct Type III-B vs `III-B -> I-B` errors
-   - correct Type III-D vs `III-D -> III-A/III-B` errors
-5. Add the strongest interpretability figures to `docs/SABR_manuscript.docx`.
+Generated manuscript assets:
 
-This should be done before any broader claim that SABR has learned biologically
-meaningful subtype features rather than only memorizing repeat-family patterns.
+- `docs/manuscript_assets/crisprcasdb_builtin_feature_importance.png/.svg`
+- `docs/manuscript_assets/crisprcasdb_permutation_feature_importance.png/.svg`
+- `docs/manuscript_assets/crisprcasdb_feature_category_importance.png/.svg`
+- `docs/manuscript_assets/crisprcasdb_typeiii_error_feature_summary.png/.svg`
+
+Top built-in ExtraTrees features:
+
+- `repeat_length`
+- `spacer_repeat_length_ratio`
+- `mean_spacer_length`
+- `min_spacer_length`
+- `max_spacer_length`
+- `median_spacer_length`
+- terminal repeat k-mers such as `terminal_kmer_4_CAAC`, `terminal_kmer_4_GTTG`, and `terminal_kmer_4_ACGT`
+- `repeat_at_percent`, `repeat_gc_percent`, and `repeat_hairpin_score`
+
+Category-level interpretation:
+
+- Built-in importance is dominated by whole-repeat k-mers and terminal k-mers.
+- Smaller but interpretable contributions come from terminal composition, array statistics, repeat composition, and repeat-structure features.
+- Held-out permutation drops are small because many repeat-derived features are correlated; single-feature permutation ranks should be interpreted cautiously.
+- The defensible conclusion is that the model uses repeat motifs, terminal motifs, array geometry, and simple repeat-structure proxies, not organism names, taxonomy, database source, accession, or cas-gene annotations as runtime inputs.
+
+Manuscript update:
+
+- `docs/SABR_manuscript_draft.md` now reflects the CRISPRCasdb runtime candidate and interpretability results.
+- `docs/generate_manuscript_docx.py` now embeds interpretability text and figures.
+- `docs/SABR_manuscript.docx` was regenerated with the new figures.
+
+Validation:
+
+- Full local test suite passes: 83 tests.
+
+## Recommended Next Step
+
+The next best scientific step is independent validation, not more internal
+CRISPRCasdb-only optimization.
+
+Priority order:
+
+1. Build a CCTyper/literature-supported validation table focused on independent
+   labels, especially `III-B`, `III-D`, and adjacent Type I-B/I-C/I-A cases.
+2. Evaluate the current CRISPRCasdb-trained runtime model on that independent
+   table and report accuracy, calibration, and subtype-level errors.
+3. If CCTyper remains blocked locally, run it on Linux/HPC/Colab and import the
+   output with the existing SABR CCTyper collectors.
+4. Expand the small resistance/sensitivity benchmark panel separately, keeping
+   it framed as CRISPR targeting evidence validation rather than direct
+   phenotypic resistance prediction.

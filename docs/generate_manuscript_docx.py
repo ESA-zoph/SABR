@@ -96,6 +96,25 @@ def main() -> None:
 
     _section(
         document,
+        "Model Interpretability",
+        "The CRISPRCasdb-trained ExtraTrees model is not a neural-network black box: it can be "
+        "interrogated through built-in tree impurity importance, held-out permutation tests, feature "
+        "category summaries, and targeted error analyses. Built-in importance is distributed across "
+        "repeat length, spacer/repeat length ratio, spacer-length statistics, terminal repeat k-mers, "
+        "GC/AT composition, and hairpin-like repeat features. Category-level importance is dominated "
+        "by whole-repeat k-mers and terminal k-mers, with smaller but biologically interpretable "
+        "contributions from terminal composition, array statistics, repeat composition, and repeat "
+        "structure. Held-out permutation drops are small because many repeat-derived features are "
+        "correlated, so these results should be read as supporting evidence for feature families rather "
+        "than as proof that any single nucleotide motif is causal."
+    )
+    _add_figure(document, ASSETS / "crisprcasdb_builtin_feature_importance.png", "Figure 12. Built-in feature importance for the CRISPRCasdb-trained ExtraTrees model.")
+    _add_figure(document, ASSETS / "crisprcasdb_permutation_feature_importance.png", "Figure 13. Held-out permutation importance for selected high-priority features.")
+    _add_figure(document, ASSETS / "crisprcasdb_feature_category_importance.png", "Figure 14. Feature importance summarized by biological feature category.")
+    _add_figure(document, ASSETS / "crisprcasdb_typeiii_error_feature_summary.png", "Figure 15. Type III correct and wrong-call feature pattern summary.")
+
+    _section(
+        document,
         "Current Interpretation",
         "The strongest current result is that CRISPRCasdb-derived training data are highly useful for "
         "repeat-to-subtype learning. However, because CRISPRCasdb labels are computationally derived "

@@ -1,0 +1,37 @@
+group,feature,row_count,mean,median
+III-B correct,repeat_length,105,33.86666666666667,36.0
+III-B correct,repeat_gc_percent,105,41.52125948571428,41.666667
+III-B correct,repeat_at_percent,105,58.47874051428572,58.333333
+III-B correct,repeat_gc_skew,105,0.001578047619047619,0.0
+III-B correct,spacer_count,105,16.16190476190476,7.0
+III-B correct,mean_spacer_length,105,35.90258995238095,35.333333
+III-B correct,repeat_self_rc_identity,105,0.3893778,0.4
+III-B correct,repeat_longest_inverted_stem,105,1.1142857142857143,0.0
+III-B correct,repeat_hairpin_score,105,0.5796081619047619,0.457143
+III-B wrong to I-B,repeat_length,37,29.945945945945947,30.0
+III-B wrong to I-B,repeat_gc_percent,37,36.69809159459458,35.483871
+III-B wrong to I-B,repeat_at_percent,37,63.30190840540542,64.516129
+III-B wrong to I-B,repeat_gc_skew,37,-0.14404991891891894,-0.111111
+III-B wrong to I-B,spacer_count,37,18.594594594594593,11.0
+III-B wrong to I-B,mean_spacer_length,37,36.41971872972974,35.595238
+III-B wrong to I-B,repeat_self_rc_identity,37,0.4665769729729728,0.451613
+III-B wrong to I-B,repeat_longest_inverted_stem,37,1.7837837837837838,0.0
+III-B wrong to I-B,repeat_hairpin_score,37,0.7913261081081078,0.451613
+III-D correct,repeat_length,42,34.42857142857143,37.0
+III-D correct,repeat_gc_percent,42,44.80362892857143,45.714286
+III-D correct,repeat_at_percent,42,55.19637107142857,54.285714
+III-D correct,repeat_gc_skew,42,-0.06464552380952382,-0.125
+III-D correct,spacer_count,42,18.238095238095237,8.0
+III-D correct,mean_spacer_length,42,37.8406905,37.0
+III-D correct,repeat_self_rc_identity,42,0.38577280952380955,0.378378
+III-D correct,repeat_longest_inverted_stem,42,1.3333333333333333,0.0
+III-D correct,repeat_hairpin_score,42,0.6077466666666667,0.48
+III-D wrong to III-A/B,repeat_length,32,34.875,36.0
+III-D wrong to III-A/B,repeat_gc_percent,32,45.4674786875,45.945946
+III-D wrong to III-A/B,repeat_at_percent,32,54.5325213125,54.054054
+III-D wrong to III-A/B,repeat_gc_skew,32,-0.005853468750000003,-0.026316
+III-D wrong to III-A/B,spacer_count,32,17.03125,17.0
+III-D wrong to III-A/B,mean_spacer_length,32,35.09364475,34.7689395
+III-D wrong to III-A/B,repeat_self_rc_identity,32,0.4072156875,0.389189
+III-D wrong to III-A/B,repeat_longest_inverted_stem,32,2.1875,2.0
+III-D wrong to III-A/B,repeat_hairpin_score,32,0.78365140625,0.76123

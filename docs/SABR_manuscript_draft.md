@@ -8,7 +8,7 @@ SABR: Spacer Alignment-Based Recognition for cautious CRISPR-phage targeting evi
 
 CRISPR spacer-protospacer matches provide evidence of prior phage exposure or potential CRISPR targeting, but they do not by themselves prove biological resistance. Resistance depends on additional factors including CRISPR-Cas subtype, PAM or PFS compatibility, seed integrity, cas gene functionality, array expression, phage escape mutations, and anti-CRISPR mechanisms. We developed SABR, an early-stage, transparent bioinformatics workflow that accepts bacterial and phage FASTA inputs, detects candidate CRISPR arrays, extracts spacers and repeats, searches spacers against phage genomes, evaluates candidate PAM/PFS support, predicts likely CRISPR-Cas subtype from repeat and array features, and reports a bacteria-by-phage CRISPR targeting evidence matrix.
 
-SABR is intentionally framed as an evidence mapper rather than a direct resistance caller. The current implementation includes internal exact-repeat CRISPR detection, internal exact spacer matching, optional external MinCED-compatible and BLASTN backends, PAM/PFS diagnostics, seed-region mismatch summaries, evidence scoring, saved run artifacts, and a Streamlit graphical interface. For repeat-derived Cas subtype prediction, we compared nearest-repeat baselines and classical machine-learning models using FASTA-derived repeat and array features. The best current model is a flat ExtraTrees classifier trained on the augmented Vink/CRISPRCasdb plus targeted GenBank/MinCED dataset, achieving 0.9152 accuracy under genus-holdout validation after filtering subtypes with fewer than 20 rows. Exploratory CRISPRCasdb SQL augmentation improved Type III-A recall but reduced overall accuracy, indicating that more computational candidate rows do not automatically improve the model. These results support SABR as a reproducible framework for CRISPR targeting evidence, while emphasizing that broader curated benchmarks and experimentally grounded labels are still required before making resistance claims.
+SABR is intentionally framed as an evidence mapper rather than a direct resistance caller. The current implementation includes internal exact-repeat CRISPR detection, internal exact spacer matching, optional external MinCED-compatible and BLASTN backends, PAM/PFS diagnostics, seed-region mismatch summaries, evidence scoring, saved run artifacts, and a Streamlit graphical interface. For repeat-derived Cas subtype prediction, we compared nearest-repeat baselines and classical machine-learning models using FASTA-derived repeat and array features. A CRISPRCasdb-trained ExtraTrees model achieved 0.9455 genome-holdout accuracy and strong transfer to the current SABR table, so it is now the runtime model candidate. These results support SABR as a reproducible framework for CRISPR targeting evidence, while emphasizing that CRISPRCasdb-derived labels remain computational candidates and broader curated validation is still required before making resistance claims.
 
 ## Keywords
 
@@ -64,7 +64,7 @@ Evaluated models include nearest-repeat classification, logistic regression, lin
 
 ### 3.7 Training Data Sources
 
-The current best training table is `data/training/repeats_cas_types_augmented_vink_genbank_targeted.csv`. It combines computationally filtered CRISPRCasdb-derived Vink et al. rows with targeted GenBank/MinCED additions for selected underrepresented subtypes. The data are treated as a development set rather than a publication-grade gold standard.
+The current runtime training table is `data/training/repeats_cas_types_crisprcasdb_sql_candidate.csv`. It contains CRISPRCasdb release 34 SQL-derived candidate repeat/Cas labels built by linking CRISPR loci to nearest same-sequence Cas clusters. The earlier SABR development table, `data/training/repeats_cas_types_augmented_vink_genbank_targeted.csv`, remains an important comparison set. Both data sources are treated as development labels rather than publication-grade gold standard truth.
 
 Additional CRISPRCasdb release 34 files were organized under `data/training/external_sources/crisprcasdb_34/`. Direct-repeat FASTA exports were imported as unlabeled inventories. The PostgreSQL dump was parsed to build computational candidate labels by linking CRISPR loci to nearest same-sequence Cas clusters. This yielded 23,507 candidate rows, but audit showed substantial overlap with current data and 125 repeat hashes with conflicting subtype labels.
 
@@ -76,7 +76,7 @@ Random row splits are treated as smoke tests because they may overestimate perfo
 
 ### 4.1 Best Current Predictor
 
-The best current predictor is the flat ExtraTrees subtype classifier trained on `repeats_cas_types_augmented_vink_genbank_targeted.csv`. Under genus-holdout validation with subtypes below 20 rows removed, it achieved:
+The earlier best SABR predictor was the flat ExtraTrees subtype classifier trained on `repeats_cas_types_augmented_vink_genbank_targeted.csv`. Under genus-holdout validation with subtypes below 20 rows removed, it achieved:
 
 - Accuracy: 0.9152
 - Rows used: 4,848
@@ -94,7 +94,7 @@ On the current best dataset:
 - hybrid ExtraTrees: 0.9119
 - hierarchical ExtraTrees: 0.9012
 
-The flat ExtraTrees model remains the runtime candidate. Hybrid and hierarchical variants have not yet justified replacing it.
+The CRISPRCasdb-trained ExtraTrees model is now the runtime candidate because it achieved stronger internal genome-holdout performance and transferred well to the current SABR table.
 
 ### 4.3 CRISPRCasdb Augmentation Experiments
 
@@ -117,7 +117,7 @@ Type III-only CRISPRCasdb augmentation:
 - III-B f1/recall: 0.49 / 0.57
 - III-D f1/recall: 0.33 / 0.26
 
-These experiments show that CRISPRCasdb candidates are useful for improving III-A recall, but they do not broadly solve Type III subtype prediction and reduce overall accuracy.
+Those initial augmentation experiments showed that adding CRISPRCasdb candidates to the older dataset was not automatically beneficial. A later CRISPRCasdb-only experiment performed better: ExtraTrees reached 0.9455 genome-holdout accuracy, nearest-repeat reached 0.9389, and the CRISPRCasdb-trained model reached 0.9811 when evaluated on compatible rows in the current SABR table. The reciprocal current-trained-to-CRISPRCasdb transfer test reached 0.9559. These transfer results suggest that the CRISPRCasdb SQL candidate labels are useful for training, while still requiring independent curated validation.
 
 ### 4.4 Dimensionality Reduction and Dataset Presentation
 
@@ -125,9 +125,15 @@ We generated PCA and sampled t-SNE projections from the same repeat/array featur
 
 Generated assets are stored under `docs/manuscript_assets/`. These visualizations should be interpreted descriptively; they are not validation metrics.
 
+### 4.5 Model Interpretability
+
+The CRISPRCasdb-trained ExtraTrees model is not a neural-network black box. We interrogated it using built-in tree feature importance, held-out permutation tests, category summaries, and Type III-focused error summaries. Built-in importance was distributed across repeat length, spacer/repeat length ratio, spacer-length statistics, terminal repeat k-mers, GC/AT composition, and hairpin-like repeat features. At the category level, whole-repeat k-mers and terminal k-mers contributed the largest total importance, followed by terminal composition, array statistics, repeat composition, and repeat structure.
+
+Held-out permutation drops were small because many repeat-derived features are correlated. Therefore, individual feature ranks should be interpreted cautiously. The more defensible conclusion is that the model relies on repeat sequence motifs, terminal repeat motifs, array geometry, and repeat-structure proxies rather than source metadata, organism names, taxonomy, or cas-gene annotations.
+
 ## 5. Discussion
 
-SABR currently performs best as a transparent CRISPR targeting evidence mapper with repeat-derived Cas subtype support. The best model shows strong overall genus-holdout performance, but weak subtypes remain. Type III-A can be improved by targeted computational candidate additions, but Type III-B and Type III-D remain difficult. This suggests that repeat/array features alone may be insufficient for some Type III distinctions, or that current labels are noisy, overlapping, or too sparse.
+SABR currently performs best as a transparent CRISPR targeting evidence mapper with repeat-derived Cas subtype support. The CRISPRCasdb-trained model shows strong internal and transfer performance, but weak subtypes remain. Error projections show that wrong calls are not randomly distributed; they concentrate around Type III and adjacent Type I-B/I-C/I-A regions, especially III-B to I-B and III-D to III-A/III-B confusions. This suggests that repeat/array features alone may be insufficient for some Type III distinctions, or that current labels are noisy, overlapping, or too sparse.
 
 The CRISPRCasdb experiments highlight a central point: adding more rows does not automatically improve prediction. Data additions improve model reliability only when labels are correct, rows are diverse, duplicate leakage is controlled, and subtype conflicts are removed. More entries can reduce performance if they introduce computational-label noise, class imbalance, repeated lineage-specific motifs, or ambiguous repeat-to-subtype mappings.
 
@@ -156,15 +162,15 @@ SABR has several current limitations:
 
 Priority next steps include:
 
-1. Calibrate model probabilities using held-out validation.
+1. Validate the CRISPRCasdb-trained model against independent CCTyper/literature-supported labels.
 2. Improve Type III labels using CCTyper or other locus-level cas-gene-supported sources.
 3. Expand curated bacteria-phage benchmark pairs.
 4. Add anti-CRISPR and PAM-failure controls.
 5. Compare internal CRISPR detection against established tools.
 6. Evaluate approximate spacer-protospacer matching.
-7. Build manuscript-quality PCA/UMAP/t-SNE figures with clear legends and caveats.
+7. Expand interpretability and error-cluster analysis for Type III-B and Type III-D.
 8. Package SABR for easier reproducible deployment.
 
 ## 9. Current Conclusion
 
-SABR provides a cautious, reproducible framework for mapping CRISPR spacer-targeting evidence and predicting likely CRISPR-Cas subtype from FASTA-derived repeat and array features. The current best predictor is a flat ExtraTrees model with 0.9152 genus-holdout accuracy. CRISPRCasdb expansion improves III-A but does not yet justify replacing the production model. The tool is scientifically useful when interpreted as an evidence mapper, not as a direct resistance caller.
+SABR provides a cautious, reproducible framework for mapping CRISPR spacer-targeting evidence and predicting likely CRISPR-Cas subtype from FASTA-derived repeat and array features. The current runtime candidate is a CRISPRCasdb-trained ExtraTrees model with 0.9455 genome-holdout accuracy and strong transfer to the current SABR table. The tool is scientifically useful when interpreted as an evidence mapper, not as a direct resistance caller.
