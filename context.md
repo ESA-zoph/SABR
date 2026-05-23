@@ -2078,3 +2078,50 @@ Interpretation:
   not enough to resolve Type III broadly.
 - Next experiment should try `III-A`-only augmentation or stricter nearby-Cas
   distance thresholds before considering any production model change.
+
+## Latest Documentation and Visualization: Manuscript Draft and Feature-Space Projections
+
+New manuscript draft:
+
+- `docs/SABR_manuscript_draft.md`
+- Scope:
+  - SABR scientific framing as a CRISPR targeting evidence mapper, not a direct
+    resistance caller.
+  - current pipeline methods.
+  - repeat-derived Cas subtype model development.
+  - current best predictor results.
+  - CRISPRCasdb direct-repeat and SQL candidate experiments.
+  - probability/confidence interpretation.
+  - limitations and future work.
+- Tone is intentionally cautious and honest: computational candidates are not
+  described as gold-standard labels, and spacer matches are not described as
+  proof of resistance.
+
+New dimensionality-reduction script:
+
+- `docs/generate_dataset_reduction_figures.py`
+- Uses current scikit-learn dependencies only.
+- Generates:
+  - PCA projections for all rows.
+  - sampled t-SNE projections for local feature-space structure.
+  - subtype-colored plots.
+  - dataset-source-colored plots.
+  - coordinate CSVs for downstream inspection.
+- UMAP was not added yet to avoid introducing a new dependency; can be added
+  later with `umap-learn`.
+
+Generated assets:
+
+- `docs/manuscript_assets/current_plus_crisprcasdb_balanced_pca_by_subtype.png`
+- `docs/manuscript_assets/current_plus_crisprcasdb_balanced_pca_by_dataset_group.png`
+- `docs/manuscript_assets/current_plus_crisprcasdb_balanced_tsne_by_subtype.png`
+- `docs/manuscript_assets/current_plus_crisprcasdb_balanced_tsne_by_dataset_group.png`
+- `docs/manuscript_assets/current_plus_crisprcasdb_typeiii_pca_by_subtype.png`
+- `docs/manuscript_assets/current_plus_crisprcasdb_typeiii_pca_by_dataset_group.png`
+- `docs/manuscript_assets/current_plus_crisprcasdb_typeiii_tsne_by_subtype.png`
+- `docs/manuscript_assets/current_plus_crisprcasdb_typeiii_tsne_by_dataset_group.png`
+- matching coordinate CSV files are also written in `docs/manuscript_assets/`.
+
+Validation:
+
+- Full test suite passes: 81 tests.
