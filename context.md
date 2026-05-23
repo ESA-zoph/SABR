@@ -1977,3 +1977,58 @@ Interpretation:
   cap overrepresented subtypes.
 - Candidate labels should remain explicitly marked as computational nearby-Cas
   labels in reports and model comparisons.
+
+## Latest Modeling Experiment: CRISPRCasdb-Augmented Balanced Dataset
+
+Built filtered augmented table:
+
+- Builder: `crispr_phage_predictor.ml.build_crisprcasdb_augmented_dataset`.
+- Current table:
+  `data/training/repeats_cas_types_augmented_vink_genbank_targeted.csv`
+- Candidate table:
+  `data/training/repeats_cas_types_crisprcasdb_sql_candidate.csv`
+- Output:
+  `data/training/repeats_cas_types_augmented_crisprcasdb_sql_balanced.csv`
+- Candidate additions only:
+  `data/training/repeats_cas_types_crisprcasdb_sql_balanced_additions.csv`
+- Added rows: 3,535.
+- Total rows: 8,419.
+- Filtering:
+  - remove candidate repeats already present in current training
+  - remove candidate repeat hashes that map to multiple subtypes
+  - cap added rows at 500 per subtype
+
+Evaluation command pattern:
+
+```powershell
+.\.venv\Scripts\python.exe -m crispr_phage_predictor.ml.train_classifier <dataset.csv> --split-strategy group_holdout --group-column genus --methods extra_trees --min-class-count 20 --include-medium-confidence
+```
+
+Comparison:
+
+- Current best table:
+  - rows used after min-class filtering: 4,848
+  - ExtraTrees genus-holdout accuracy: 0.9152
+  - `III-A` f1: 0.58, recall: 0.43
+  - `III-B` f1: 0.59, recall: 0.57
+  - `III-D` f1: 0.40, recall: 0.40
+- CRISPRCasdb-augmented balanced table:
+  - rows used after min-class filtering: 8,378
+  - ExtraTrees genus-holdout accuracy: 0.9050
+  - `III-A` f1: 0.68, recall: 0.66
+  - `III-B` f1: 0.55, recall: 0.48
+  - `III-D` f1: 0.38, recall: 0.32
+
+Interpretation:
+
+- The balanced CRISPRCasdb additions improve `III-A` recall substantially.
+- Overall accuracy drops by about 1.0 percentage point.
+- `III-B`, `III-D`, and rare classes remain fragile.
+- Do not replace the current best production model with this augmented model
+  yet.
+- Next modeling step should test targeted Type III-only augmentation or stricter
+  distance/confidence filters rather than adding all balanced candidates.
+
+Tracked comparison artifact:
+
+- `docs/crisprcasdb_augmented_model_comparison.csv`

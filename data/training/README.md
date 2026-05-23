@@ -139,6 +139,19 @@ python -m crispr_phage_predictor.ml.audit_crisprcasdb_candidates data/training/r
 The audit reports overlap, repeat-to-subtype conflicts, subtype gains, and a
 proposed balanced candidate subset size.
 
+To build the filtered augmented table used for model experiments:
+
+```bash
+python -m crispr_phage_predictor.ml.build_crisprcasdb_augmented_dataset data/training/repeats_cas_types_augmented_vink_genbank_targeted.csv data/training/repeats_cas_types_crisprcasdb_sql_candidate.csv --output data/training/repeats_cas_types_augmented_crisprcasdb_sql_balanced.csv --candidate-output data/training/repeats_cas_types_crisprcasdb_sql_balanced_additions.csv
+```
+
+This keeps only novel, non-conflicting candidate repeats and caps additions at
+500 rows per subtype by default.
+
+Initial evaluation showed that the balanced CRISPRCasdb augmentation improved
+`III-A` recall but reduced overall genus-holdout accuracy. Treat it as an
+experiment source, not the production training table.
+
 ## Dataset Policy
 
 - Keep source provenance for every row.
