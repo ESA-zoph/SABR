@@ -137,6 +137,8 @@ The ExtraTrees classifier can produce class probabilities. SABR can therefore re
 
 The probability of a correct Cas type or subtype call generally improves with more high-quality, diverse, correctly labeled training entries. It does not necessarily improve with raw dataset size. Rows that are duplicated, biased, mislabeled, or derived from ambiguous computational sources can lower real-world accuracy.
 
+Initial calibration analysis showed that the current production-candidate model is under-confident on the genus-holdout split: observed accuracy was 0.9152 while mean predicted confidence was 0.6898. The expected calibration error was 0.2254. In contrast, the CRISPRCasdb-only experimental model was better calibrated on internal genome-holdout validation, with accuracy 0.9455, mean confidence 0.9227, and expected calibration error 0.0362. This supports further evaluation of a CRISPRCasdb-trained model artifact, but independent curated validation is still required before replacing the production model.
+
 ## 7. Limitations
 
 SABR has several current limitations:

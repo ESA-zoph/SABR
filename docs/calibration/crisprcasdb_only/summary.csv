@@ -1,0 +1,2 @@
+training_csv,split_strategy,group_column,train_rows,test_rows,accuracy,mean_confidence,expected_calibration_error,min_class_count,n_bins
+data\training\repeats_cas_types_crisprcasdb_sql_candidate.csv,group_holdout,genome_id,17607,5871,0.9454948049735991,0.9226683685937941,0.03615636313844919,20,10

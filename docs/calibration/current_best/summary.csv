@@ -1,0 +1,2 @@
+training_csv,split_strategy,group_column,train_rows,test_rows,accuracy,mean_confidence,expected_calibration_error,min_class_count,n_bins
+data\training\repeats_cas_types_augmented_vink_genbank_targeted.csv,group_holdout,genus,3633,1215,0.9152263374485596,0.6898106995884774,0.22541563786008234,20,10

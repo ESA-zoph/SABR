@@ -2347,3 +2347,71 @@ Priority order:
    - focus on Type III-B and Type III-D
 5. Only after calibration and independent validation decide whether the
    CRISPRCasdb-only model should replace the current production model.
+
+## Latest Calibration and Experimental Model Artifact
+
+Implemented:
+
+- `crispr_phage_predictor.ml.calibrate_subtype_model`
+- Outputs:
+  - `summary.csv`
+  - `predictions.csv`
+  - `confidence_bins.csv`
+  - `subtype_confidence.csv`
+  - `accuracy_by_threshold.csv`
+  - `reliability_curve.png`
+  - `accuracy_by_confidence_threshold.png`
+  - `subtype_confidence_accuracy.png`
+
+Current production-candidate calibration:
+
+- Dataset:
+  `data/training/repeats_cas_types_augmented_vink_genbank_targeted.csv`
+- Split: genus holdout.
+- Train rows: 3,633.
+- Test rows: 1,215.
+- Accuracy: 0.915226.
+- Mean predicted confidence: 0.689811.
+- Expected calibration error: 0.225416.
+- Interpretation: the model is substantially under-confident on this split;
+  observed accuracy is higher than predicted confidence across most confidence
+  bins.
+- Output directory:
+  `docs/calibration/current_best/`
+
+CRISPRCasdb-only calibration:
+
+- Dataset:
+  `data/training/repeats_cas_types_crisprcasdb_sql_candidate.csv`
+- Split: genome_id holdout.
+- Train rows: 17,607.
+- Test rows: 5,871.
+- Accuracy: 0.945495.
+- Mean predicted confidence: 0.922668.
+- Expected calibration error: 0.036156.
+- Interpretation: CRISPRCasdb-only ExtraTrees is much better calibrated
+  internally than the current production-candidate model, but this remains an
+  internal computational-label validation.
+- Output directory:
+  `docs/calibration/crisprcasdb_only/`
+
+Experimental model artifact:
+
+- Command:
+
+```powershell
+.\.venv\Scripts\python.exe -m crispr_phage_predictor.ml.export_model --training-table data\training\repeats_cas_types_crisprcasdb_sql_candidate.csv --output models\cas_subtype_extratrees_crisprcasdb_experimental.joblib --min-class-count 20
+```
+
+- Output:
+  `models/cas_subtype_extratrees_crisprcasdb_experimental.joblib`
+- Training rows: 23,478.
+- Classes:
+  `I-A`, `I-B`, `I-C`, `I-D`, `I-E`, `I-F`, `I-G`, `II-A`, `II-B`,
+  `II-C`, `III-A`, `III-B`, `III-C`, `III-D`, `V-A`, `V-K`, `VI-B1`.
+- The artifact is local and ignored by git like other model binaries.
+- Do not replace `models/cas_subtype_extratrees.joblib` yet.
+
+Validation:
+
+- Full local test suite passes: 82 tests.
