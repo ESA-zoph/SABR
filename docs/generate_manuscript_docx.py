@@ -90,6 +90,9 @@ def main() -> None:
     _add_figure(document, ASSETS / "current_plus_crisprcasdb_balanced_tsne_by_subtype.png", "Figure 6. Sampled t-SNE projection colored by subtype.")
     _add_figure(document, ASSETS / "current_plus_crisprcasdb_balanced_pca_by_dataset_group.png", "Figure 7. PCA projection showing current rows and CRISPRCasdb additions.")
     _add_figure(document, ASSETS / "current_plus_crisprcasdb_typeiii_tsne_by_dataset_group.png", "Figure 8. Type III-focused sampled t-SNE by dataset source.")
+    _add_figure(document, ASSETS / "crisprcasdb_model_tsne_correct_vs_wrong.png", "Figure 9. Held-out CRISPRCasdb model t-SNE projection highlighting wrong calls.")
+    _add_figure(document, ASSETS / "crisprcasdb_model_tsne_errors_by_true_subtype.png", "Figure 10. Wrong-call t-SNE projection colored by true subtype.")
+    _add_figure(document, ASSETS / "crisprcasdb_model_top_error_pairs.png", "Figure 11. Most frequent wrong-call pairs for the CRISPRCasdb-trained model.")
 
     _section(
         document,
@@ -97,8 +100,10 @@ def main() -> None:
         "The strongest current result is that CRISPRCasdb-derived training data are highly useful for "
         "repeat-to-subtype learning. However, because CRISPRCasdb labels are computationally derived "
         "and overlap conceptually with some existing sources, final claims require independent "
-        "curated/literature/CCTyper-supported validation. SABR's core contribution remains the "
-        "integrated, cautious, reproducible evidence framework."
+        "curated/literature/CCTyper-supported validation. Error projection shows that wrong calls "
+        "are not randomly distributed: they concentrate around Type III and adjacent Type I-B/I-C/I-A "
+        "regions, especially III-B to I-B and III-D to III-A/III-B confusions. SABR's core contribution "
+        "remains the integrated, cautious, reproducible evidence framework."
     )
 
     _section(

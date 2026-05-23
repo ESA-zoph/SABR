@@ -2466,3 +2466,56 @@ SVG manuscript figures generated:
 Validation:
 
 - Full local test suite passes: 83 tests.
+
+## Latest Error Projection: Where Wrong Calls Cluster
+
+New script:
+
+- `docs/generate_error_projection_figures.py`
+
+Purpose:
+
+- Project the held-out CRISPRCasdb-only test set into PCA and sampled t-SNE
+  feature space.
+- Overlay correct versus wrong calls.
+- Plot wrong calls by true subtype.
+- Summarize most common subtype confusions.
+
+Generated files:
+
+- `docs/manuscript_assets/crisprcasdb_model_error_projection_coordinates.csv`
+- `docs/manuscript_assets/crisprcasdb_model_error_rows.csv`
+- `docs/manuscript_assets/crisprcasdb_model_pca_correct_vs_wrong.png/.svg`
+- `docs/manuscript_assets/crisprcasdb_model_tsne_correct_vs_wrong.png/.svg`
+- `docs/manuscript_assets/crisprcasdb_model_tsne_errors_by_true_subtype.png/.svg`
+- `docs/manuscript_assets/crisprcasdb_model_top_error_pairs.png/.svg`
+
+Error summary:
+
+- Wrong calls are concentrated in Type III and adjacent Type I regions.
+- Top wrong-call pairs:
+  - `III-B -> I-B`: 37
+  - `III-A -> I-B`: 25
+  - `III-D -> III-A`: 18
+  - `III-B -> I-C`: 17
+  - `III-B -> I-A`: 16
+  - `I-B -> III-B`: 14
+  - `III-D -> III-B`: 14
+  - `III-A -> III-B`: 13
+  - `III-B -> III-A`: 12
+- Wrong calls by true subtype:
+  - `III-B`: 94
+  - `III-D`: 56
+  - `III-A`: 49
+  - `I-B`: 28
+  - `I-A`: 22
+  - `III-C`: 16
+  - `I-D`: 16
+
+Interpretation:
+
+- The model is not failing randomly.
+- Most residual errors are in biologically/plausibly overlapping repeat-feature
+  regions involving Type III and some Type I subtypes.
+- This supports targeted future validation and data expansion for Type III-B,
+  Type III-D, and neighboring Type I-B/I-C/I-A boundaries.
