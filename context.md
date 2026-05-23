@@ -2125,3 +2125,71 @@ Generated assets:
 Validation:
 
 - Full test suite passes: 81 tests.
+
+## Latest Modeling Experiment: CRISPRCasdb-Only Training Control
+
+Question:
+
+- Does a model trained solely on CRISPRCasdb SQL candidate rows perform better
+  than the current SABR training table?
+
+Rationale:
+
+- This is an important internal consistency control for CRISPRCasdb.
+- It does not prove the labels are biologically superior because the table is
+  computationally derived from CRISPRCasdb nearest same-sequence Cas clusters.
+
+Evaluation settings:
+
+- Candidate table:
+  `data/training/repeats_cas_types_crisprcasdb_sql_candidate.csv`
+- Current table:
+  `data/training/repeats_cas_types_augmented_vink_genbank_targeted.csv`
+- split: `group_holdout`
+- group column: `genome_id`
+- min class count: 20
+- include medium-confidence labels: yes
+
+Current table, genome-holdout:
+
+- nearest repeat:
+  - rows used: 4,848
+  - accuracy: 0.9084
+  - `III-A` f1/recall: 0.66 / 0.69
+  - `III-B` f1/recall: 0.60 / 0.60
+  - `III-D` f1/recall: 0.27 / 0.32
+- ExtraTrees:
+  - rows used: 4,848
+  - accuracy: 0.9266
+  - `III-A` f1/recall: 0.77 / 0.75
+  - `III-B` f1/recall: 0.63 / 0.52
+  - `III-D` f1/recall: 0.15 / 0.11
+
+CRISPRCasdb SQL candidate-only table, genome-holdout:
+
+- nearest repeat:
+  - rows used: 23,478
+  - accuracy: 0.9389
+  - `III-A` f1/recall: 0.86 / 0.86
+  - `III-B` f1/recall: 0.52 / 0.50
+  - `III-D` f1/recall: 0.54 / 0.49
+- ExtraTrees:
+  - rows used: 23,478
+  - accuracy: 0.9455
+  - `III-A` f1/recall: 0.89 / 0.88
+  - `III-B` f1/recall: 0.58 / 0.53
+  - `III-D` f1/recall: 0.54 / 0.43
+
+Interpretation:
+
+- CRISPRCasdb-only performs better than the current table under genome-holdout
+  internal validation.
+- The nearest-repeat baseline is also very high, suggesting strong repeat-family
+  structure and possible database-specific consistency.
+- This makes CRISPRCasdb valuable as a model-development source, but it should
+  not automatically replace the current production training table without:
+  - external validation against curated/literature labels
+  - genus/species-level validation with organism metadata restored
+  - conflict filtering and calibration
+  - checking whether performance transfers to uploaded genomes outside the
+    CRISPRCasdb distribution
