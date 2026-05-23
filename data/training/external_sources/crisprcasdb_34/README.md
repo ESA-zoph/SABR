@@ -36,6 +36,16 @@ Expected SABR value:
 - Useful for audit/provenance and comparison against the current
   CRISPRCasdb-derived Vink import path.
 
+Current importer:
+
+```bash
+python -m crispr_phage_predictor.ml.import_crisprcasdb_repeats data/training/external_sources/crisprcasdb_34/dr_34.zip --output data/training/crisprcasdb_34_direct_repeats_inventory.csv
+```
+
+This creates an unlabeled direct-repeat inventory. It is intentionally not a
+Cas-type training table until repeat/locus records are joined to defensible
+Cas-cluster or curated label metadata.
+
 Caveats:
 
 - Treat as raw computational source data, not gold-standard training labels.

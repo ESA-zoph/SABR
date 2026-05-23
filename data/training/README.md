@@ -100,6 +100,23 @@ Use this table for early scaling tests and feature/model development. For
 publication claims, keep it separate from the manually curated seed set and
 report it as a computationally filtered CRISPRCasdb-derived candidate dataset.
 
+## CRISPRCasdb Raw Direct-Repeat Inventory
+
+Raw CRISPRCasdb release 34 files are documented under:
+
+```text
+data/training/external_sources/crisprcasdb_34/
+```
+
+To create an unlabeled direct-repeat inventory from the local FASTA export:
+
+```bash
+python -m crispr_phage_predictor.ml.import_crisprcasdb_repeats data/training/external_sources/crisprcasdb_34/dr_34.zip --output data/training/crisprcasdb_34_direct_repeats_inventory.csv
+```
+
+This inventory is useful for coverage audits and future joins against the SQL
+dump, but it is not a Cas type/subtype training table by itself.
+
 ## Dataset Policy
 
 - Keep source provenance for every row.

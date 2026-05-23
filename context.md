@@ -1774,3 +1774,80 @@ Preferred alternatives if WSL networking remains blocked:
 4. As a last resort, use Windows to download Linux conda packages or a prepared
    Linux environment for offline transfer into WSL, but this is more fragile
    because compiled bioinformatics tools may have post-install and path issues.
+
+## Latest Repository Organization and Backup
+
+Repository cleanup completed:
+
+- Raw CRISPRCasdb files from the temporary root `crisprdb/` folder were moved
+  under `data/training/external_sources/crisprcasdb_34/`.
+- Large raw files are ignored by git:
+  - CRISPRCasdb ZIP/PDF payloads.
+  - downloaded GenBank source folders.
+  - downloaded FASTA curation inputs.
+  - generated benchmark evaluation CSVs.
+  - generated report CSV/DOCX/figure outputs.
+- Small source/provenance files remain tracked:
+  - code and tests.
+  - curated metadata TSVs.
+  - README files.
+  - report-generation scripts.
+  - `assets/aub-logo.png`.
+
+Checkpoint:
+
+- Full local test suite passed: 73 tests.
+- Commit created: `5023ddb Organize SABR pipeline and training data sources`.
+- GitHub remote configured:
+  `https://github.com/ESA-zoph/SABR`
+- Local `master` was pushed to `origin/master`.
+- Working tree was clean immediately after push.
+
+## Latest Implementation Status: CRISPRCasdb Direct-Repeat Inventory
+
+New CRISPRCasdb release 34 source assessment:
+
+- `dr_34.zip` contains direct-repeat FASTA exports.
+- `spacer_34.zip` contains spacer FASTA exports.
+- `ccpp_db.zip` contains a PostgreSQL dump with CRISPR locus, sequence, taxon,
+  and Cas-cluster tables.
+- Local quick counts:
+  - `direct_repeat_id.fsa`: 28,712 records.
+  - `spacer_id.fsa`: 353,377 records.
+
+Implementation decision:
+
+- Direct-repeat FASTA alone is useful, but it is not a defensible Cas
+  type/subtype training label source by itself.
+- Add an unlabeled inventory importer first, then later join records against
+  SQL-derived Cas-cluster/locus metadata if the relationship is clear.
+
+Implemented:
+
+- `crispr_phage_predictor.ml.import_crisprcasdb_repeats`
+  creates an unlabeled direct-repeat inventory from `dr_34.zip`.
+- Output columns include source, release, FASTA member, record ID, accession
+  count, repeat sequence, repeat length, sequence hash, IUPAC validity, and
+  whether the repeat is currently usable by SABR repeat-feature extraction.
+- Documentation updated in:
+  - `data/training/README.md`
+  - `data/training/external_sources/crisprcasdb_34/README.md`
+
+Current command:
+
+```powershell
+.\.venv\Scripts\python.exe -m crispr_phage_predictor.ml.import_crisprcasdb_repeats data\training\external_sources\crisprcasdb_34\dr_34.zip --output data\training\crisprcasdb_34_direct_repeats_inventory.csv
+```
+
+Local inventory results:
+
+- Default accession-oriented member `direct_repeat_seqName.fsa`:
+  - output: `data/training/crisprcasdb_34_direct_repeats_inventory.csv`
+  - rows: 7,683
+  - currently usable by SABR repeat features: 7,652
+  - not usable by current repeat features: 31
+- ID-oriented member `direct_repeat_id.fsa`:
+  - output: `data/training/crisprcasdb_34_direct_repeats_by_id_inventory.csv`
+  - rows: 28,712
+- Both output CSV files are derived data under `data/training/*.csv` and remain
+  ignored by git.
