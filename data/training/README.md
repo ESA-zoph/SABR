@@ -129,6 +129,16 @@ within a configurable distance threshold and keeps only unambiguous
 `CAS-Type...` subtype labels. Treat the output as computational candidates,
 not curated gold labels.
 
+Before using the candidate table for training, audit it against the current
+best training table:
+
+```bash
+python -m crispr_phage_predictor.ml.audit_crisprcasdb_candidates data/training/repeats_cas_types_augmented_vink_genbank_targeted.csv data/training/repeats_cas_types_crisprcasdb_sql_candidate.csv --output-dir data/training/audits/crisprcasdb_sql_candidate
+```
+
+The audit reports overlap, repeat-to-subtype conflicts, subtype gains, and a
+proposed balanced candidate subset size.
+
 ## Dataset Policy
 
 - Keep source provenance for every row.

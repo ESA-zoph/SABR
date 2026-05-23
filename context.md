@@ -1913,3 +1913,67 @@ Interpretation:
   Type III coverage.
 - It is still not manually curated truth and should be used separately from
   gold seed rows in reports and validation.
+
+## Latest Analysis: CRISPRCasdb Candidate Audit Against Current Training
+
+Audit script:
+
+- `crispr_phage_predictor.ml.audit_crisprcasdb_candidates`
+- Compares the current best training table against the CRISPRCasdb SQL
+  candidate table.
+- Reports:
+  - row and unique repeat counts
+  - repeat-sequence overlap
+  - candidate repeat-to-subtype conflicts
+  - novel non-conflicting candidate rows
+  - a proposed balanced candidate subset capped by subtype
+
+Command run:
+
+```powershell
+.\.venv\Scripts\python.exe -m crispr_phage_predictor.ml.audit_crisprcasdb_candidates data\training\repeats_cas_types_augmented_vink_genbank_targeted.csv data\training\repeats_cas_types_crisprcasdb_sql_candidate.csv --output-dir data\training\audits\crisprcasdb_sql_candidate
+```
+
+Audit summary:
+
+- Current training rows: 4,884.
+- CRISPRCasdb candidate rows: 23,507.
+- Current unique repeat hashes: 2,880.
+- Candidate unique repeat hashes: 5,355.
+- Overlapping repeat hashes: 2,801.
+- Candidate repeat hashes with subtype conflicts: 125.
+- Candidate rows after conflict filtering: 22,378.
+- Novel non-conflicting candidate rows: 4,563.
+- Proposed balanced candidate rows with cap 500/subtype: 3,535.
+
+Most useful balanced candidate additions by subtype:
+
+- `I-E`: 500 capped from 1,528 novel non-conflicting rows.
+- `II-C`: 489.
+- `I-C`: 447.
+- `I-B`: 359.
+- `III-A`: 266.
+- `III-B`: 253.
+- `I-G`: 251; not present in current training.
+- `I-F`: 235.
+- `III-D`: 180.
+- `II-A`: 179.
+- `I-A`: 132.
+- `I-D`: 95.
+- `V-K`: 66; not present in current training.
+
+Conflict examples:
+
+- Some identical repeats map to multiple subtypes, including `I-E;I-F`,
+  `I-F;III-B`, `I-B;III-B`, and `I-B;II-C;III-B`.
+- These conflict repeat hashes should be excluded from first-pass augmented
+  training.
+
+Interpretation:
+
+- CRISPRCasdb SQL candidates are highly overlapping with the current
+  Vink/GenBank-derived table, so a naive merge would overcount known repeats.
+- The useful next dataset should add only novel, non-conflicting candidates and
+  cap overrepresented subtypes.
+- Candidate labels should remain explicitly marked as computational nearby-Cas
+  labels in reports and model comparisons.

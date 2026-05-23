@@ -1,0 +1,11 @@
+metric,value
+current_rows,4884
+candidate_rows,23507
+current_unique_repeat_hashes,2880
+candidate_unique_repeat_hashes,5355
+overlapping_repeat_hashes,2801
+candidate_conflicting_repeat_hashes,125
+candidate_rows_after_conflict_filter,22378
+novel_nonconflicting_candidate_rows,4563
+balanced_candidate_rows,3535
+max_per_subtype,500
