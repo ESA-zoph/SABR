@@ -2252,3 +2252,98 @@ Interpretation:
 - The result supports training an experimental CRISPRCasdb-only runtime model
   artifact, but final replacement should wait for curated/literature/CCTyper
   external validation and probability calibration.
+
+## Current Project Interpretation: What SABR Contributes
+
+SABR appears to bring a real contribution, but the claim should be framed
+carefully.
+
+Strong contribution:
+
+- SABR is an integrated CRISPR-phage targeting evidence mapper, not a direct
+  resistance caller.
+- It combines:
+  - FASTA parsing and diagnostics
+  - CRISPR array detection
+  - spacer extraction
+  - spacer-phage matching
+  - PAM/PFS support diagnostics
+  - seed-region mismatch summaries
+  - repeat-derived Cas subtype prediction
+  - bacteria-by-phage evidence matrices
+  - Streamlit GUI and saved reproducible outputs
+- It uses cautious scientific language:
+  - CRISPR targeting evidence
+  - candidate CRISPR-phage interaction
+  - PAM/PFS compatibility evidence
+  - repeat-derived Cas subtype prediction
+- It avoids the common overclaim that spacer matches prove biological
+  resistance.
+- Its Cas subtype model uses FASTA-derived repeat/array features rather than
+  runtime taxonomy, organism name, source database, or cas-gene shortcuts.
+- The project now has transparent validation artifacts:
+  - nearest-repeat baselines
+  - ExtraTrees/random forest/hybrid/hierarchical comparisons
+  - genome/genus holdout splits
+  - CRISPRCasdb-only controls
+  - cross-dataset transfer tests
+  - dimensionality-reduction figures
+  - explicit negative results from naive data augmentation
+
+Current best predictor interpretation:
+
+- Safest current production candidate remains the flat ExtraTrees model trained
+  on `repeats_cas_types_augmented_vink_genbank_targeted.csv`.
+- Best documented genus-holdout accuracy for this model: 0.9152.
+- CRISPRCasdb-only ExtraTrees gives stronger internal genome-holdout accuracy
+  at 0.9455 and transfers well to the current table, but it should remain an
+  experimental candidate until externally validated against curated/literature
+  or CCTyper-supported labels.
+
+What SABR should not claim yet:
+
+- confirmed phage resistance prediction
+- clinical or phenotypic resistance prediction
+- superiority over all existing CRISPR tools
+- fully calibrated subtype probabilities
+- final gold-standard Type III-B/III-D subtype resolution
+
+Best manuscript framing:
+
+- workflow integration
+- cautious evidence reporting
+- FASTA-only repeat-derived Cas subtype prediction
+- reproducible model/data validation
+- evidence that more computational training rows can improve one class while
+  reducing overall performance
+- transparent limitations and need for curated external validation
+
+## Recommended Next Step
+
+The next best technical step is probability calibration and external-validation
+packaging, before changing the production runtime model.
+
+Priority order:
+
+1. Add calibration analysis for the current best ExtraTrees model:
+   - reliability curve
+   - confidence bins
+   - expected calibration error
+   - accuracy by confidence threshold
+   - per-subtype confidence behavior
+2. Export an experimental CRISPRCasdb-only model artifact separately from the
+   production artifact:
+   - keep `models/cas_subtype_extratrees.joblib` as production for now
+   - write something like `models/cas_subtype_extratrees_crisprcasdb_experimental.joblib`
+   - compare metadata and predictions without silently replacing runtime
+3. Update the manuscript with:
+   - clear contribution statement
+   - model comparison table
+   - PCA/t-SNE figures
+   - calibration figure once available
+4. Build a small independent validation panel:
+   - manually curated/literature rows
+   - CCTyper-supported labels if WSL/networking can be solved or run elsewhere
+   - focus on Type III-B and Type III-D
+5. Only after calibration and independent validation decide whether the
+   CRISPRCasdb-only model should replace the current production model.
