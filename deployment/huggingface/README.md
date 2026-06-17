@@ -27,8 +27,8 @@ The Phage Lab, Faculty of Medicine, American University of Beirut
 
 Set these variables in the Hugging Face Space settings before launch:
 
-- `SABR_MODEL_URL`: stable HTTPS URL for `cas_subtype_extratrees.joblib`,
-  preferably from the DOI-backed Zenodo release.
+- `SABR_MODEL_URL`:
+  `https://zenodo.org/records/20737961/files/cas_subtype_extratrees.joblib?download=1`
 - `SABR_MODEL_SHA256`:
   `ae0e8a5d56d6a2a4eb8206fb916fd9dee51f7fb9276528346b0cb8279b76cd32`
 
@@ -38,4 +38,5 @@ missing-artifact fallback instead of the selected ExtraTrees model.
 ## Citation
 
 For article-linked use, cite the Zenodo DOI for the frozen SABR source/model
-release. This Space is the live demo and may change after the archived release.
+release: `10.5281/zenodo.20737961`. This Space is the live demo and may change
+after the archived release.

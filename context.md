@@ -3621,12 +3621,13 @@ Current publication/deployment state as of 2026-06-09:
   - classes: `I-A`, `I-B`, `I-C`, `I-D`, `I-E`, `I-F`, `I-G`,
     `II-A`, `II-B`, `II-C`, `III-A`, `III-B`, `III-C`, `III-D`,
     `V-A`, `V-K`, `VI-B1`.
-- Remaining account/legal metadata placeholders before public release:
-  - GitHub owner/repository URL in `CITATION.cff` and `.zenodo.json`;
-  - Hugging Face Space owner/name in `CITATION.cff` and `.zenodo.json`;
-  - final license identifier in `CITATION.cff` and `.zenodo.json`;
-  - final Zenodo DOI/record URL after release reservation/publication;
-  - final `SABR_MODEL_URL` pointing to the archived model artifact.
+- Account/release metadata status:
+  - GitHub repository URL is set to `https://github.com/ESA-zoph/SABR`;
+  - Hugging Face Space URL is set to `https://huggingface.co/spaces/ESA-zoph/SABR`;
+  - license identifier is set to `MIT`;
+  - Zenodo DOI is set to `10.5281/zenodo.20737961`;
+  - DOI-backed `SABR_MODEL_URL` is set to
+    `https://zenodo.org/records/20737961/files/cas_subtype_extratrees.joblib?download=1`.
 - Latest release-prep verification:
   - `python -m py_compile app.py` passed;
   - focused tests for BLAST alignment/PAM/output paths passed: `21 passed`;
@@ -3829,6 +3830,9 @@ Release-readiness checkpoint on 2026-06-17:
   - browser refresh confirmed the subtype-model warning was gone.
 - Remaining public-release blockers are external metadata/distribution:
   - final Hugging Face Space owner/name and URL;
-  - Zenodo DOI/record URL;
-  - final DOI-backed `SABR_MODEL_URL`;
+  - Zenodo DOI now provided: `10.5281/zenodo.20737961`
+    (`https://doi.org/10.5281/zenodo.20737961`);
+  - DOI-backed `SABR_MODEL_URL` now documented as
+    `https://zenodo.org/records/20737961/files/cas_subtype_extratrees.joblib?download=1`
+    assuming the uploaded file name remains `cas_subtype_extratrees.joblib`;
   - optional fresh-venv manual Streamlit smoke test before tagging.

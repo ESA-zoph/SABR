@@ -20,7 +20,7 @@ Required decisions:
 
 - GitHub repository URL.
 - Hugging Face Space URL.
-- Zenodo DOI or reserved DOI once available.
+- Zenodo DOI: `10.5281/zenodo.20737961`.
 - Author names, affiliations, support contact email, and ORCID IDs where available.
 - Open-source license identifier: `MIT`.
 
@@ -118,6 +118,12 @@ Recommended sequence:
 7. Update `README.md`, `MODEL_CARD.md`, `CITATION.cff`, `.zenodo.json`, and the
    article with the DOI after Zenodo reserves or publishes it.
 
+Current Zenodo DOI:
+
+```text
+10.5281/zenodo.20737961
+```
+
 ## 6. Deploy Hugging Face Space
 
 Create a Docker Space using the contents of this repository.
@@ -125,7 +131,7 @@ Create a Docker Space using the contents of this repository.
 Set Space variables:
 
 ```text
-SABR_MODEL_URL=<stable HTTPS URL for cas_subtype_extratrees.joblib>
+SABR_MODEL_URL=https://zenodo.org/records/20737961/files/cas_subtype_extratrees.joblib?download=1
 SABR_MODEL_SHA256=ae0e8a5d56d6a2a4eb8206fb916fd9dee51f7fb9276528346b0cb8279b76cd32
 ```
 
@@ -141,7 +147,7 @@ committed into the repository.
 
 Use:
 
-- Zenodo DOI: frozen software/model release.
+- Zenodo DOI: `10.5281/zenodo.20737961` for the frozen software/model release.
 - Hugging Face Space URL: live public demo.
 - GitHub URL: development repository and issue tracker.
 
