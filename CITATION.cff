@@ -18,7 +18,7 @@ contact:
     affiliation: "The Phage Lab, Faculty of Medicine, American University of Beirut"
     email: "es60@aub.edu.lb"
 repository-code: "https://github.com/ESA-zoph/SABR"
-url: "https://huggingface.co/spaces/ESA-zoph/SABR"
+url: "https://huggingface.co/spaces/EsberSaba/SABR"
 doi: "10.5281/zenodo.20737961"
 keywords:
   - CRISPR

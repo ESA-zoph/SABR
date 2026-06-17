@@ -3623,7 +3623,7 @@ Current publication/deployment state as of 2026-06-09:
     `V-A`, `V-K`, `VI-B1`.
 - Account/release metadata status:
   - GitHub repository URL is set to `https://github.com/ESA-zoph/SABR`;
-  - Hugging Face Space URL is set to `https://huggingface.co/spaces/ESA-zoph/SABR`;
+  - Hugging Face Space URL is set to `https://huggingface.co/spaces/EsberSaba/SABR`;
   - license identifier is set to `MIT`;
   - Zenodo DOI is set to `10.5281/zenodo.20737961`;
   - DOI-backed `SABR_MODEL_URL` is set to

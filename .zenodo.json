@@ -38,7 +38,7 @@
       "resource_type": "software"
     },
     {
-      "identifier": "https://huggingface.co/spaces/ESA-zoph/SABR",
+      "identifier": "https://huggingface.co/spaces/EsberSaba/SABR",
       "relation": "isSupplementTo",
       "resource_type": "software"
     }
