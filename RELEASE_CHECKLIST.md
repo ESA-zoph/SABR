@@ -33,9 +33,10 @@
   `.zenodo.json`, and `deployment/huggingface/README.md` if needed.
 - Confirm public contact/support address is correct in README, deployment docs,
   Space README, `CITATION.cff`, and `.zenodo.json`.
-- Archive the frozen source release plus runtime model artifact on Zenodo.
-- After Zenodo publication, replace all example model URLs with the final
-  DOI-backed model file URL.
+- Archive the frozen source release plus runtime model artifact on Zenodo:
+  `10.5281/zenodo.20737961`.
+- DOI-backed model file URL is now documented as
+  `https://zenodo.org/records/20737961/files/cas_subtype_extratrees.joblib?download=1`.
 - Configure Hugging Face Space variables:
   - `SABR_MODEL_URL`
   - `SABR_MODEL_SHA256`

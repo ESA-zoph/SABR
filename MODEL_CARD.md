@@ -41,9 +41,11 @@ SABR software release on Zenodo and use the Zenodo-hosted artifact URL as
 `SABR_MODEL_URL` for the Hugging Face Spaces demo. Configure:
 
 ```text
-SABR_MODEL_URL=<stable HTTPS URL for cas_subtype_extratrees.joblib>
+SABR_MODEL_URL=https://zenodo.org/records/20737961/files/cas_subtype_extratrees.joblib?download=1
 SABR_MODEL_SHA256=ae0e8a5d56d6a2a4eb8206fb916fd9dee51f7fb9276528346b0cb8279b76cd32
 ```
+
+Archived release DOI: `10.5281/zenodo.20737961`.
 
 The Docker startup script validates the SHA-256 before placing the artifact at
 the runtime model path.

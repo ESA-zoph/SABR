@@ -19,6 +19,7 @@ contact:
     email: "es60@aub.edu.lb"
 repository-code: "https://github.com/ESA-zoph/SABR"
 url: "https://huggingface.co/spaces/ESA-zoph/SABR"
+doi: "10.5281/zenodo.20737961"
 keywords:
   - CRISPR
   - bacteriophage

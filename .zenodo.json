@@ -28,6 +28,11 @@
   ],
   "related_identifiers": [
     {
+      "identifier": "https://doi.org/10.5281/zenodo.20737961",
+      "relation": "isIdenticalTo",
+      "resource_type": "software"
+    },
+    {
       "identifier": "https://github.com/ESA-zoph/SABR",
       "relation": "isSupplementTo",
       "resource_type": "software"

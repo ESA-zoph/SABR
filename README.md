@@ -104,7 +104,7 @@ Build and run the local public-beta container:
 ```bash
 docker build -t sabr:local .
 docker run --rm -p 7860:7860 \
-  -e SABR_MODEL_URL="https://example.org/cas_subtype_extratrees.joblib" \
+  -e SABR_MODEL_URL="https://zenodo.org/records/20737961/files/cas_subtype_extratrees.joblib?download=1" \
   -e SABR_MODEL_SHA256="ae0e8a5d56d6a2a4eb8206fb916fd9dee51f7fb9276528346b0cb8279b76cd32" \
   sabr:local
 ```
@@ -113,7 +113,7 @@ Open `http://127.0.0.1:7860`.
 
 The Docker image intentionally excludes `models/*.joblib`. Set
 `SABR_MODEL_URL` and `SABR_MODEL_SHA256`, or mount
-`models/cas_subtype_extratrees.joblib` into `/app/models/` when running locally.
+`models/cas_subtype_extratrees.joblib` into `/home/user/app/models/` when running locally.
 If no artifact is provided, SABR starts with its documented missing-artifact
 fallback.
 
@@ -122,7 +122,7 @@ fallback.
 Recommended article-linked public-beta strategy:
 
 1. Archive the frozen `v0.1-beta` source release and runtime model artifact on
-   Zenodo so the article can cite a DOI.
+   Zenodo so the article can cite DOI `10.5281/zenodo.20737961`.
 2. Host a public browser demo on Hugging Face Spaces using the Dockerfile in
    this repository.
 3. Configure the Space with `SABR_MODEL_URL` pointing to the archived model

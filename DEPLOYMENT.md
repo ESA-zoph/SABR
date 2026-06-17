@@ -62,7 +62,7 @@ Provide the runtime artifact at launch through environment variables:
 ```bash
 docker build -t sabr:local .
 docker run --rm -p 7860:7860 \
-  -e SABR_MODEL_URL="https://example.org/cas_subtype_extratrees.joblib" \
+  -e SABR_MODEL_URL="https://zenodo.org/records/20737961/files/cas_subtype_extratrees.joblib?download=1" \
   -e SABR_MODEL_SHA256="ae0e8a5d56d6a2a4eb8206fb916fd9dee51f7fb9276528346b0cb8279b76cd32" \
   sabr:local
 ```
@@ -81,7 +81,7 @@ container:
 
 ```bash
 docker run --rm -p 7860:7860 \
-  -v "$PWD/models/cas_subtype_extratrees.joblib:/app/models/cas_subtype_extratrees.joblib:ro" \
+  -v "$PWD/models/cas_subtype_extratrees.joblib:/home/user/app/models/cas_subtype_extratrees.joblib:ro" \
   sabr:local
 ```
 
@@ -113,7 +113,8 @@ Spaces as the interactive demo:
    - `SABR_MODEL_SHA256`:
      `ae0e8a5d56d6a2a4eb8206fb916fd9dee51f7fb9276528346b0cb8279b76cd32`
 5. In the article, cite the Zenodo DOI for the exact software/model release and
-   provide the Hugging Face Space URL as a live demo.
+   provide the Hugging Face Space URL as a live demo. The current Zenodo DOI is
+   `10.5281/zenodo.20737961`.
 
 The development GitHub repository can remain the working project and issue
 tracker, but the DOI-backed Zenodo release should be the citation target.
