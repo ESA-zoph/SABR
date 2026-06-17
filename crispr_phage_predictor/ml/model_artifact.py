@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from functools import lru_cache
 import hashlib
 from pathlib import Path
 from typing import Any
@@ -73,9 +74,12 @@ def save_artifact(artifact: CasSubtypeModelArtifact, path: Path = DEFAULT_MODEL_
         },
         path,
     )
+    load_artifact.cache_clear()
+    _file_sha256.cache_clear()
     return path
 
 
+@lru_cache(maxsize=4)
 def load_artifact(path: Path = DEFAULT_MODEL_PATH) -> CasSubtypeModelArtifact:
     payload = joblib.load(path)
     return CasSubtypeModelArtifact(
@@ -126,6 +130,7 @@ def model_artifact_metadata(path: Path = DEFAULT_MODEL_PATH) -> dict[str, Any]:
     return metadata
 
 
+@lru_cache(maxsize=8)
 def _file_sha256(path: Path) -> str:
     digest = hashlib.sha256()
     with path.open("rb") as handle:

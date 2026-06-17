@@ -25,6 +25,8 @@ class SpacerHit:
     bitscore: float | None
     spacer_sequence: str
     protospacer_sequence: str
+    aligned_spacer_sequence: str = ""
+    aligned_protospacer_sequence: str = ""
     protospacer_5p_flank: str = ""
     protospacer_3p_flank: str = ""
     genomic_upstream_flank: str = ""
@@ -38,6 +40,7 @@ class SpacerHit:
     pam_match: bool | None = None
     pam_support_level: str = "not_evaluated"
     pam_compatibility_score: float | None = None
+    pam_offset_from_protospacer: int | None = None
     seed_region: str = ""
     seed_length: int | None = None
     seed_mismatches: int | None = None

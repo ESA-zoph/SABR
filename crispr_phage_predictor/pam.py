@@ -30,6 +30,7 @@ class PamEvaluation:
     pam_match: bool | None
     pam_support_level: str
     compatibility_score: float | None = None
+    pam_offset_from_protospacer: int | None = None
 
 
 def evaluate_pam_rule(
@@ -48,18 +49,18 @@ def evaluate_pam_rule(
     ``5prime:AWG`` or ``3prime:NGG``.
     """
     if not pam_rule:
-        return PamEvaluation("", "", None, "not_evaluated", None)
+        return PamEvaluation("", "", None, "not_evaluated", None, None)
 
     normalized_rule = pam_rule.strip().upper()
     try:
         side, motif = normalized_rule.split(":", maxsplit=1)
     except ValueError:
-        return PamEvaluation(pam_rule, "", None, "invalid_rule", None)
+        return PamEvaluation(pam_rule, "", None, "invalid_rule", None, None)
 
     side = _normalize_side(side)
     motif = motif.strip().replace(" ", "")
     if not side or not motif or any(base not in IUPAC_BASES for base in motif):
-        return PamEvaluation(pam_rule, "", None, "invalid_rule", None)
+        return PamEvaluation(pam_rule, "", None, "invalid_rule", None, None)
 
     flank = _select_flank(
         side=side,
@@ -69,21 +70,45 @@ def evaluate_pam_rule(
         genomic_downstream_flank=genomic_downstream_flank,
     )
     if len(flank) < len(motif):
-        return PamEvaluation(pam_rule, flank, None, "insufficient_flank", None)
+        return PamEvaluation(pam_rule, flank, None, "insufficient_flank", None, None)
 
-    pam_sequence = (
+    adjacent_sequence = (
         flank[-len(motif) :]
         if side in {"5prime", "genomic_5prime"}
         else flank[: len(motif)]
     )
-    is_match = _sequence_matches_motif(pam_sequence, motif)
-    support = "compatible" if is_match else "not_supported"
+    if _sequence_matches_motif(adjacent_sequence, motif):
+        return PamEvaluation(
+            pam_rule,
+            adjacent_sequence,
+            True,
+            "compatible",
+            _pam_compatibility_score(adjacent_sequence, motif),
+            0,
+        )
+
+    nearby_sequence, nearby_offset = _nearest_matching_window(
+        flank=flank,
+        motif=motif,
+        side=side,
+    )
+    if nearby_sequence:
+        return PamEvaluation(
+            pam_rule,
+            nearby_sequence,
+            True,
+            "compatible_nearby",
+            _pam_compatibility_score(nearby_sequence, motif),
+            nearby_offset,
+        )
+
     return PamEvaluation(
         pam_rule,
-        pam_sequence,
-        is_match,
-        support,
-        _pam_compatibility_score(pam_sequence, motif),
+        adjacent_sequence,
+        False,
+        "not_supported",
+        _pam_compatibility_score(adjacent_sequence, motif),
+        0,
     )
 
 
@@ -125,6 +150,27 @@ def _sequence_matches_motif(sequence: str, motif: str) -> bool:
         if allowed is None or observed not in allowed:
             return False
     return True
+
+
+def _nearest_matching_window(flank: str, motif: str, side: str) -> tuple[str, int | None]:
+    motif_length = len(motif)
+    if len(flank) < motif_length:
+        return "", None
+
+    if side in {"5prime", "genomic_5prime"}:
+        starts = range(len(flank) - motif_length, -1, -1)
+        for start in starts:
+            candidate = flank[start : start + motif_length]
+            if _sequence_matches_motif(candidate, motif):
+                offset = len(flank) - (start + motif_length)
+                return candidate, offset
+        return "", None
+
+    for start in range(0, len(flank) - motif_length + 1):
+        candidate = flank[start : start + motif_length]
+        if _sequence_matches_motif(candidate, motif):
+            return candidate, start
+    return "", None
 
 
 def _pam_compatibility_score(sequence: str, motif: str) -> float:

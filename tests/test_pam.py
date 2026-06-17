@@ -50,6 +50,33 @@ class PamEvaluationTests(unittest.TestCase):
         self.assertFalse(result.pam_match)
         self.assertEqual(result.pam_support_level, "not_supported")
         self.assertEqual(result.compatibility_score, round(2 / 3, 6))
+        self.assertEqual(result.pam_offset_from_protospacer, 0)
+
+    def test_reports_nearby_3prime_pam_when_adjacent_window_fails(self):
+        result = evaluate_pam_rule(
+            protospacer_5p_flank="AGTATCCACG",
+            protospacer_3p_flank="TTCGAGGGTA",
+            genomic_upstream_flank="TACCCTCGAA",
+            genomic_downstream_flank="CGTGGATACT",
+            pam_rule="3prime:NGG",
+        )
+
+        self.assertEqual(result.pam_sequence, "AGG")
+        self.assertTrue(result.pam_match)
+        self.assertEqual(result.pam_support_level, "compatible_nearby")
+        self.assertEqual(result.pam_offset_from_protospacer, 4)
+
+    def test_reports_nearby_5prime_pam_when_adjacent_window_fails(self):
+        result = evaluate_pam_rule(
+            protospacer_5p_flank="TTAAGCC",
+            protospacer_3p_flank="CCCC",
+            pam_rule="5prime:AWG",
+        )
+
+        self.assertEqual(result.pam_sequence, "AAG")
+        self.assertTrue(result.pam_match)
+        self.assertEqual(result.pam_support_level, "compatible_nearby")
+        self.assertEqual(result.pam_offset_from_protospacer, 2)
 
     def test_scores_fully_incompatible_pam_as_zero(self):
         result = evaluate_pam_rule(

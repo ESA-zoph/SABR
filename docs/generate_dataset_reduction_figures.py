@@ -28,15 +28,15 @@ OUTPUT_DIR = ROOT / "docs" / "manuscript_assets"
 
 def main() -> None:
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
-    current = _load_with_group(CURRENT_DATASET, "current_training")
-    additions = _load_with_group(ADDITIONS_DATASET, "crisprcasdb_balanced_addition")
-    typeiii_additions = _load_with_group(TYPEIII_ADDITIONS_DATASET, "crisprcasdb_typeiii_addition")
+    current = _load_with_group(CURRENT_DATASET, "development table")
+    additions = _load_with_group(ADDITIONS_DATASET, "broad annotation additions")
+    typeiii_additions = _load_with_group(TYPEIII_ADDITIONS_DATASET, "Type III annotation additions")
 
     combined = pd.concat([current, additions], ignore_index=True)
     typeiii_combined = pd.concat([current, typeiii_additions], ignore_index=True)
 
-    _write_projection_bundle(combined, "current_plus_crisprcasdb_balanced")
-    _write_projection_bundle(typeiii_combined, "current_plus_crisprcasdb_typeiii")
+    _write_projection_bundle(combined, "development_plus_broad_additions")
+    _write_projection_bundle(typeiii_combined, "development_plus_typeiii_additions")
     print(f"Wrote dimensionality-reduction figures and tables to {OUTPUT_DIR}")
 
 
@@ -61,7 +61,7 @@ def _write_projection_bundle(table: pd.DataFrame, prefix: str) -> None:
         pca_table,
         x_col="PCA1",
         y_col="PCA2",
-        title=f"{prefix}: PCA of repeat/array features",
+        title="PCA of repeat/array features by subtype",
         output_path=OUTPUT_DIR / f"{prefix}_pca_by_subtype.png",
         color_col="cas_subtype",
     )
@@ -69,7 +69,7 @@ def _write_projection_bundle(table: pd.DataFrame, prefix: str) -> None:
         pca_table,
         x_col="PCA1",
         y_col="PCA2",
-        title=f"{prefix}: PCA by dataset source",
+        title="PCA of repeat/array features by annotation set",
         output_path=OUTPUT_DIR / f"{prefix}_pca_by_dataset_group.png",
         color_col="dataset_group",
     )
@@ -93,7 +93,7 @@ def _write_projection_bundle(table: pd.DataFrame, prefix: str) -> None:
         tsne_table,
         x_col="TSNE1",
         y_col="TSNE2",
-        title=f"{prefix}: sampled t-SNE of repeat/array features",
+        title="Sampled t-SNE of repeat/array features by subtype",
         output_path=OUTPUT_DIR / f"{prefix}_tsne_by_subtype.png",
         color_col="cas_subtype",
     )
@@ -101,7 +101,7 @@ def _write_projection_bundle(table: pd.DataFrame, prefix: str) -> None:
         tsne_table,
         x_col="TSNE1",
         y_col="TSNE2",
-        title=f"{prefix}: sampled t-SNE by dataset source",
+        title="Sampled t-SNE of repeat/array features by annotation set",
         output_path=OUTPUT_DIR / f"{prefix}_tsne_by_dataset_group.png",
         color_col="dataset_group",
     )

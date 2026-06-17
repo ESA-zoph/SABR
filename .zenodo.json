@@ -1,0 +1,44 @@
+{
+  "title": "SABR: Spacer Alignment-Based Recognition",
+  "upload_type": "software",
+  "publication_date": "2026-06-09",
+  "description": "SABR is a Streamlit bioinformatics tool for mapping CRISPR spacer-targeting evidence against bacteriophages and reporting repeat-derived CRISPR-Cas subtype support with PAM/PFS-aware interpretation. SABR reports computational evidence layers and does not make definitive phenotype-level phage resistance claims.",
+  "creators": [
+    {
+      "name": "Saba, Esber",
+      "affiliation": "The Phage Lab, Faculty of Medicine, American University of Beirut"
+    }
+  ],
+  "contributors": [
+    {
+      "name": "Saba, Esber",
+      "affiliation": "The Phage Lab, Faculty of Medicine, American University of Beirut",
+      "type": "ContactPerson"
+    }
+  ],
+  "keywords": [
+    "CRISPR",
+    "bacteriophage",
+    "spacer",
+    "PAM",
+    "PFS",
+    "CRISPR-Cas",
+    "bioinformatics",
+    "Streamlit"
+  ],
+  "related_identifiers": [
+    {
+      "identifier": "https://github.com/ESA-zoph/SABR",
+      "relation": "isSupplementTo",
+      "resource_type": "software"
+    },
+    {
+      "identifier": "https://huggingface.co/spaces/ESA-zoph/SABR",
+      "relation": "isSupplementTo",
+      "resource_type": "software"
+    }
+  ],
+  "license": "MIT",
+  "version": "0.1-beta",
+  "access_right": "open"
+}

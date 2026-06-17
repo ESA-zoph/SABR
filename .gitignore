@@ -4,7 +4,10 @@ __pycache__/
 venv/
 .env
 .streamlit/secrets.toml
-data/examples/
+data/examples/*
+!data/examples/README.md
+!data/examples/basic_demo/
+!data/examples/basic_demo/*
 data/training/*.csv
 data/training/*.tsv
 !data/training/curated_cas_type_manifest.tsv
@@ -28,4 +31,17 @@ models/*.joblib
 docs/*.csv
 docs/*.docx
 docs/figures/
+docs/manuscript_assets/
+docs/interpretability/
 Screenshot.png
+
+# Local caches and bulky research/provenance artifacts.
+.pytest_cache/
+.pytest-tmp/
+tmp/
+streamlit-*.log
+cctyper_runs_batch*/
+cctyper_*validation_package*.zip
+data/validation/
+data/validation/cctyper_full_balanced_validation_package/
+data/training/phage_host_baseline*/

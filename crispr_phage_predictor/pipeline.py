@@ -7,13 +7,19 @@ from typing import Callable
 
 import pandas as pd
 
-from crispr_phage_predictor.crispr import CrisprArray, detect_crispr_arrays
+from crispr_phage_predictor.crispr import (
+    DEFAULT_MAX_REPEAT_LENGTH,
+    DEFAULT_MIN_REPEAT_LENGTH,
+    CrisprArray,
+    detect_crispr_arrays,
+)
 from crispr_phage_predictor.cas_prediction import ArrayCasPrediction
 from crispr_phage_predictor.cas_prediction import CURATED_PAM_RULES_BY_SUBTYPE
 from crispr_phage_predictor.external.blast import find_spacer_hits_with_blast
 from crispr_phage_predictor.external.minced import detect_arrays_with_minced
 from crispr_phage_predictor.io import FastaRecord
 from crispr_phage_predictor.matching import find_spacer_hits
+from crispr_phage_predictor.matching import reverse_complement
 from crispr_phage_predictor.matching import summarize_seed_mismatches
 from crispr_phage_predictor.matching import SpacerHit
 from crispr_phage_predictor.pam import evaluate_pam_rule
@@ -22,6 +28,105 @@ from crispr_phage_predictor.scoring import score_experimental_pam_weighted_evide
 
 DetectionMethod = Literal["internal", "minced"]
 MatchingMethod = Literal["internal", "blast"]
+
+CRISPR_ARRAY_COLUMNS = [
+    "array_id",
+    "bacterium",
+    "contig",
+    "start",
+    "end",
+    "repeat_length",
+    "repeat_count",
+    "spacer_count",
+    "mean_spacer_length",
+    "repeat_consensus",
+]
+
+SPACER_COLUMNS = [
+    "array_id",
+    "spacer_id",
+    "bacterium",
+    "contig",
+    "spacer_index",
+    "spacer_length",
+    "spacer_sequence",
+]
+
+SPACER_HIT_COLUMNS = [
+    "bacterium",
+    "phage",
+    "array_id",
+    "spacer_id",
+    "phage_contig",
+    "start",
+    "end",
+    "strand",
+    "identity_percent",
+    "mismatches",
+    "alignment_length",
+    "spacer_length",
+    "coverage_percent",
+    "evalue",
+    "bitscore",
+    "spacer_sequence",
+    "aligned_spacer_sequence",
+    "aligned_protospacer_sequence",
+    "protospacer_sequence",
+    "protospacer_5p_flank",
+    "protospacer_3p_flank",
+    "genomic_upstream_flank",
+    "genomic_downstream_flank",
+    "predicted_cas_subtype",
+    "cas_subtype_confidence",
+    "cas_subtype_prediction_method",
+    "pam_rule",
+    "pam_rule_source",
+    "pam_sequence",
+    "pam_match",
+    "pam_support_level",
+    "pam_compatibility_score",
+    "pam_offset_from_protospacer",
+    "seed_region",
+    "seed_length",
+    "seed_mismatches",
+    "seed_mismatch_positions",
+]
+
+PAM_SUBTYPE_SUPPORT_COLUMNS = [
+    "array_id",
+    "bacterium",
+    "spacer_hit_count",
+    "repeat_predicted_cas_subtype",
+    "repeat_prediction_confidence",
+    "top_pam_supported_subtype",
+    "top_pam_support_count",
+    "repeat_predicted_subtype_pam_support_count",
+    "pam_supported_subtypes",
+    "pam_subtype_support_counts",
+    "repeat_pam_subtype_agreement",
+]
+
+EVIDENCE_MATRIX_COLUMNS = [
+    "bacterium",
+    "phage",
+    "crispr_targeting_score",
+    "experimental_pam_weighted_score",
+    "hypothetical_resistance_score",
+    "spacer_hits",
+    "unique_matching_spacers",
+    "best_identity_percent",
+    "best_coverage_percent",
+    "pam_supported_hits",
+    "pam_evaluated_hits",
+    "pam_support_level",
+    "best_pam_compatibility_score",
+    "mean_pam_compatibility_score",
+    "seed_evaluated_hits",
+    "best_seed_mismatches",
+    "current_evidence_level",
+    "evidence_summary",
+    "interpretation",
+]
 
 
 @dataclass(frozen=True)
@@ -51,13 +156,13 @@ class InitialRunSummary:
                 },
                 {
                     "stage": "Cas type classifier",
-                    "status": "planned",
-                    "notes": "Will predict type/subtype from repeat, array, and cas-gene features.",
+                    "status": "ready: repeat/array ExtraTrees model when artifact is present",
+                    "notes": "Predicts likely subtype from FASTA-derived repeat and array features.",
                 },
                 {
                     "stage": "PAM analysis",
-                    "status": "planned",
-                    "notes": "Will evaluate protospacer flanks using predicted system type.",
+                    "status": "ready: subtype-aware curated rule subset",
+                    "notes": "Evaluates protospacer flanks when a supported subtype rule is available.",
                 },
                 {
                     "stage": "CRISPR targeting evidence scoring",
@@ -92,17 +197,24 @@ def detect_arrays_for_records(
 
     arrays: list[CrisprArray] = []
     total = len(records)
+    repeat_scan_steps = DEFAULT_MAX_REPEAT_LENGTH - DEFAULT_MIN_REPEAT_LENGTH + 1
+    total_scan_steps = max(total * repeat_scan_steps, 1)
     for index, record in enumerate(records, start=1):
         genome_id = record.source_file
+
+        def update_internal_scan_progress(repeat_step: int, _repeat_total: int) -> None:
+            if progress_callback:
+                completed_steps = ((index - 1) * repeat_scan_steps) + repeat_step
+                progress_callback(completed_steps, total_scan_steps, record)
+
         arrays.extend(
             detect_crispr_arrays(
                 sequence=record.sequence,
                 genome_id=genome_id,
                 contig_id=record.record_id,
+                scan_progress_callback=update_internal_scan_progress,
             )
         )
-        if progress_callback:
-            progress_callback(index, total, record)
     return arrays
 
 
@@ -154,7 +266,7 @@ def annotate_spacer_hits_with_pam(
         )
         seed_summary = summarize_seed_mismatches(
             spacer_sequence=hit.spacer_sequence,
-            protospacer_sequence=hit.protospacer_sequence,
+            protospacer_sequence=_strand_oriented_protospacer(hit),
             pam_rule=evaluation.pam_rule,
             seed_length=seed_length,
         )
@@ -180,6 +292,7 @@ def annotate_spacer_hits_with_pam(
                 pam_match=evaluation.pam_match,
                 pam_support_level=evaluation.pam_support_level,
                 pam_compatibility_score=evaluation.compatibility_score,
+                pam_offset_from_protospacer=evaluation.pam_offset_from_protospacer,
                 seed_region=seed_summary.seed_region if seed_summary else "",
                 seed_length=seed_summary.seed_length if seed_summary else None,
                 seed_mismatches=seed_summary.seed_mismatches if seed_summary else None,
@@ -189,6 +302,14 @@ def annotate_spacer_hits_with_pam(
             )
         )
     return annotated_hits
+
+
+def _strand_oriented_protospacer(hit: SpacerHit) -> str:
+    if hit.aligned_protospacer_sequence:
+        return hit.aligned_protospacer_sequence
+    if hit.strand == "-":
+        return reverse_complement(hit.protospacer_sequence)
+    return hit.protospacer_sequence
 
 
 def _select_pam_rule(
@@ -241,7 +362,7 @@ def summarize_crispr_arrays(arrays: list[CrisprArray]) -> pd.DataFrame:
         }
         for array in arrays
     ]
-    return pd.DataFrame(rows)
+    return pd.DataFrame(rows, columns=CRISPR_ARRAY_COLUMNS)
 
 
 def summarize_spacers(arrays: list[CrisprArray]) -> pd.DataFrame:
@@ -259,7 +380,7 @@ def summarize_spacers(arrays: list[CrisprArray]) -> pd.DataFrame:
                     "spacer_sequence": spacer,
                 }
             )
-    return pd.DataFrame(rows)
+    return pd.DataFrame(rows, columns=SPACER_COLUMNS)
 
 
 def summarize_spacer_hits(hits: list[SpacerHit]) -> pd.DataFrame:
@@ -281,6 +402,8 @@ def summarize_spacer_hits(hits: list[SpacerHit]) -> pd.DataFrame:
             "evalue": hit.evalue,
             "bitscore": hit.bitscore,
             "spacer_sequence": hit.spacer_sequence,
+            "aligned_spacer_sequence": hit.aligned_spacer_sequence,
+            "aligned_protospacer_sequence": hit.aligned_protospacer_sequence,
             "protospacer_sequence": hit.protospacer_sequence,
             "protospacer_5p_flank": hit.protospacer_5p_flank,
             "protospacer_3p_flank": hit.protospacer_3p_flank,
@@ -295,6 +418,7 @@ def summarize_spacer_hits(hits: list[SpacerHit]) -> pd.DataFrame:
             "pam_match": hit.pam_match,
             "pam_support_level": hit.pam_support_level,
             "pam_compatibility_score": hit.pam_compatibility_score,
+            "pam_offset_from_protospacer": hit.pam_offset_from_protospacer,
             "seed_region": hit.seed_region,
             "seed_length": hit.seed_length,
             "seed_mismatches": hit.seed_mismatches,
@@ -302,7 +426,7 @@ def summarize_spacer_hits(hits: list[SpacerHit]) -> pd.DataFrame:
         }
         for hit in hits
     ]
-    return pd.DataFrame(rows)
+    return pd.DataFrame(rows, columns=SPACER_HIT_COLUMNS)
 
 
 def summarize_pam_subtype_support(
@@ -358,7 +482,7 @@ def summarize_pam_subtype_support(
                 ),
             }
         )
-    return pd.DataFrame(rows)
+    return pd.DataFrame(rows, columns=PAM_SUBTYPE_SUPPORT_COLUMNS)
 
 
 def build_crispr_targeting_evidence_matrix(
@@ -424,7 +548,7 @@ def build_crispr_targeting_evidence_matrix(
                     "interpretation": targeting_score.interpretation,
                 }
             )
-    return pd.DataFrame(rows)
+    return pd.DataFrame(rows, columns=EVIDENCE_MATRIX_COLUMNS)
 
 
 def build_resistance_evidence_matrix(

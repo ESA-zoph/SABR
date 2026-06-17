@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from statistics import mean
+from typing import Callable
 
 
 DEFAULT_MIN_REPEAT_LENGTH = 23
@@ -49,6 +50,7 @@ def detect_crispr_arrays(
     min_spacer_length: int = DEFAULT_MIN_SPACER_LENGTH,
     max_spacer_length: int = DEFAULT_MAX_SPACER_LENGTH,
     min_repeats: int = DEFAULT_MIN_REPEATS,
+    scan_progress_callback: Callable[[int, int], None] | None = None,
 ) -> list[CrisprArray]:
     """Detect candidate CRISPR arrays using exact direct repeats.
 
@@ -60,7 +62,8 @@ def detect_crispr_arrays(
     normalized = _normalize_dna(sequence)
     candidates: list[CrisprArray] = []
 
-    for repeat_length in range(min_repeat_length, max_repeat_length + 1):
+    repeat_lengths = list(range(min_repeat_length, max_repeat_length + 1))
+    for repeat_index, repeat_length in enumerate(repeat_lengths, start=1):
         repeat_positions = _index_repeat_positions(normalized, repeat_length)
         for repeat, positions in repeat_positions.items():
             if len(positions) < min_repeats or not _is_candidate_repeat(repeat):
@@ -77,6 +80,8 @@ def detect_crispr_arrays(
                     min_repeats=min_repeats,
                 )
             )
+        if scan_progress_callback:
+            scan_progress_callback(repeat_index, len(repeat_lengths))
 
     selected = _select_non_overlapping_arrays(candidates)
     return [

@@ -28,31 +28,31 @@ OUTPUT_DIR = ROOT / "docs" / "manuscript_assets"
 def main() -> None:
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     predictions = _heldout_predictions()
-    predictions.to_csv(OUTPUT_DIR / "crisprcasdb_model_error_projection_coordinates.csv", index=False)
+    predictions.to_csv(OUTPUT_DIR / "selected_model_error_projection_coordinates.csv", index=False)
     _plot_projection(
         predictions,
         "PCA1",
         "PCA2",
         "correct",
-        OUTPUT_DIR / "crisprcasdb_model_pca_correct_vs_wrong",
-        "CRISPRCasdb-trained model: PCA correct vs wrong calls",
+        OUTPUT_DIR / "selected_model_pca_correct_vs_wrong",
+        "Selected SABR subtype model: PCA correct vs wrong calls",
     )
     _plot_projection(
         predictions,
         "TSNE1",
         "TSNE2",
         "correct",
-        OUTPUT_DIR / "crisprcasdb_model_tsne_correct_vs_wrong",
-        "CRISPRCasdb-trained model: t-SNE correct vs wrong calls",
+        OUTPUT_DIR / "selected_model_tsne_correct_vs_wrong",
+        "Selected SABR subtype model: t-SNE correct vs wrong calls",
     )
     errors = predictions[~predictions["correct"]].copy()
-    errors.to_csv(OUTPUT_DIR / "crisprcasdb_model_error_rows.csv", index=False)
+    errors.to_csv(OUTPUT_DIR / "selected_model_error_rows.csv", index=False)
     _plot_projection(
         errors,
         "TSNE1",
         "TSNE2",
         "true_subtype",
-        OUTPUT_DIR / "crisprcasdb_model_tsne_errors_by_true_subtype",
+        OUTPUT_DIR / "selected_model_tsne_errors_by_true_subtype",
         "Wrong calls clustered by true subtype",
     )
     _plot_error_pair_counts(errors)
@@ -165,10 +165,10 @@ def _plot_error_pair_counts(errors: pd.DataFrame) -> None:
     plt.figure(figsize=(8, 5))
     plt.barh(counts.index, counts.values, color="#C0443E")
     plt.xlabel("Wrong calls")
-    plt.title("Most Frequent CRISPRCasdb Model Confusions")
+    plt.title("Selected SABR Model: Most Frequent Confusions")
     plt.tight_layout()
-    plt.savefig((OUTPUT_DIR / "crisprcasdb_model_top_error_pairs").with_suffix(".png"), dpi=220)
-    plt.savefig((OUTPUT_DIR / "crisprcasdb_model_top_error_pairs").with_suffix(".svg"))
+    plt.savefig((OUTPUT_DIR / "selected_model_top_error_pairs").with_suffix(".png"), dpi=220)
+    plt.savefig((OUTPUT_DIR / "selected_model_top_error_pairs").with_suffix(".svg"))
     plt.close()
 
 

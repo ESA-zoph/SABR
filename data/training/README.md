@@ -176,3 +176,101 @@ or `III-D`; keep it as an experiment source for now.
 - Compare a nearest-repeat similarity baseline against classical ML models.
 - Treat subtype prediction confidence and calibration as core evaluation
   outputs, not optional polish.
+
+## Phage-Host Interaction Features
+
+`phage_host_interaction_features.tsv` is the first model-ready table for the
+new sensitivity/resistance direction. It is generated from:
+
+- `data/curation/phage_host_interactions.tsv`
+- `data/curation/accession_linkage.tsv`
+- `data/curation/accession_linkage_coverage.tsv`
+- FASTA files under `data/curation/downloads/`
+
+Regenerate it with:
+
+```bash
+python scripts/build_interaction_feature_table.py
+```
+
+The current table is hybrid-mode. Strict rows use exact or strain-alias host
+genomes and exact phage genomes. Hybrid rows use exact phage genomes plus
+downloaded reference-proxy host genomes. Keep `uses_reference_proxy_host` as a
+feature or filtering column so proxy-based modeling is not confused with
+exact-isolate validation.
+
+Run the first smoke-test baseline with:
+
+```bash
+python scripts/train_phage_host_baseline.py
+```
+
+Outputs are written to `data/training/phage_host_baseline/`. Treat these as
+engineering baselines only. Row-random splits are optimistic because related
+rows share phages, host proxies, sources, and assay protocols. Grouped splits
+by phage or source are more honest for generalization and currently show that
+the model is not yet strong enough for biological claims.
+
+Add first-pass CRISPR spacer-targeting features with:
+
+```bash
+python scripts/add_targeting_features.py
+```
+
+This creates `phage_host_interaction_features_with_targeting.tsv`. The current
+targeting layer uses Diced/MinCED-compatible array detection when available,
+exact spacer matching, and SABR's targeting-evidence score. Internal exact
+repeat fallback is bounded to small FASTA records so large reference genomes do
+not block feature generation.
+
+The targeting layer also includes experimental fuzzy spacer/protospacer
+features. These allow imperfect matches up to a bounded mismatch count and
+summarize possible seed-edge conservation, distal mismatch burden, and a graded
+CRISPR interference score. Evaluate targeting thresholds directly with:
+
+```bash
+python scripts/evaluate_targeting_thresholds.py
+python scripts/evaluate_targeting_thresholds.py --restrict-tier tier1_exact_pair --output data/training/targeting_threshold_evaluation_tier1_exact_pair.tsv
+```
+
+Current threshold behavior is high precision but low recall: on tier1 exact-pair
+rows, CRISPR targeting thresholds identify 10 resistant rows with no susceptible
+false positives, but miss 21 resistant rows.
+
+Add GenBank-derived phage annotation features with:
+
+```bash
+python scripts/download_phage_genbank_records.py
+python scripts/add_phage_annotation_features.py
+python scripts/train_phage_host_baseline.py --features data/training/phage_host_interaction_features_with_annotations.tsv --output-dir data/training/phage_host_baseline_with_annotations
+```
+
+This layer parses CDS product/gene/note/function text for keyword families such
+as integrase, repressor, tail fiber, baseplate, depolymerase, holin/endolysin,
+DNA methyltransferase, and anti-CRISPR-like terms. These are weak annotation
+features and should be interpreted as coarse mechanistic hints, not curated
+functional calls.
+
+The current linked feature table uses explicit tiers from
+`accession_linkage_coverage.tsv`:
+
+- `tier1_exact_pair`: exact/strain-alias host genome and exact phage genome.
+- `tier2_proxy_host_exact_phage`: reference-proxy host genome and exact phage
+  genome.
+- `tier4_host_only_or_proxy`: phenotype row with host exact/proxy linkage but
+  no exact phage genome yet.
+
+`dataset_tier` is metadata and is excluded from model features.
+
+After the first NCBI Assembly host-promotion pass, strict exact-pair rows
+increased from 13 to 74. The modelable table remains 213 rows because those are
+the rows with exact phage genomes; the improvement is that many Mirzaei/Nilsson
+ECOR rows now use exact host assemblies instead of the E. coli reference proxy.
+The current combined targeting + annotation baseline is stored in
+`phage_host_baseline_with_annotations/`.
+
+To evaluate only strict exact host-phage genome rows:
+
+```bash
+python scripts/train_phage_host_baseline.py --features data/training/phage_host_interaction_features_with_annotations.tsv --output-dir data/training/phage_host_baseline_with_fuzzy_targeting_tier1_exact_pair --restrict-tier tier1_exact_pair
+```

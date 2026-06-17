@@ -33,9 +33,9 @@ def collect_cctyper_training_table(
             load_cctyper_crisprs_near_cas(
                 crisprs_near_cas,
                 genome_id=str(row["genome_id"]),
-                organism=str(row.get("organism", "")),
-                taxonomy=str(row.get("taxonomy", "")),
-                assembly_level=str(row.get("assembly_level", "")),
+                organism=_optional_string(row, "organism"),
+                taxonomy=_optional_string(row, "taxonomy"),
+                assembly_level=_optional_string(row, "assembly_level"),
             )
         )
 
@@ -74,6 +74,11 @@ def _validate_manifest(manifest: pd.DataFrame) -> None:
     missing = [column for column in REQUIRED_MANIFEST_COLUMNS if column not in manifest.columns]
     if missing:
         raise ValueError(f"Manifest is missing required columns: {', '.join(missing)}")
+
+
+def _optional_string(row: pd.Series, column: str) -> str:
+    value = row.get(column, "")
+    return "" if pd.isna(value) else str(value)
 
 
 if __name__ == "__main__":

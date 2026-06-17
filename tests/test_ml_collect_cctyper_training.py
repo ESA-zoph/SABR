@@ -50,6 +50,46 @@ class CollectCCTyperTrainingTests(unittest.TestCase):
             self.assertEqual(table.loc[0, "genome_id"], "GCF_000001")
             self.assertEqual(table.loc[0, "cas_subtype"], "I-E")
 
+    def test_empty_optional_manifest_fields_remain_empty(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            output_dir = root / "example_cctyper"
+            output_dir.mkdir()
+            pd.DataFrame(
+                [
+                    {
+                        "Contig": "NC_000001",
+                        "Start": 10,
+                        "End": 200,
+                        "Consensus_repeat": "GTTCACTGCCGTACAGGCAGCTTAGAAA",
+                        "N_repeats": 4,
+                        "Repeat_len": 28,
+                        "Spacer_len_avg": 32,
+                        "Trusted": "TRUE",
+                        "Subtype": "I-E",
+                        "Subtype_probability": 0.95,
+                    }
+                ]
+            ).to_csv(output_dir / "crisprs_near_cas.tab", sep="\t", index=False)
+            manifest_path = root / "manifest.csv"
+            pd.DataFrame(
+                [
+                    {
+                        "cctyper_output_dir": str(output_dir),
+                        "genome_id": "GCF_000001",
+                        "organism": "",
+                        "taxonomy": "",
+                        "assembly_level": "",
+                    }
+                ]
+            ).to_csv(manifest_path, index=False)
+
+            table = collect_cctyper_training_table(manifest_path, root / "output.csv")
+
+            self.assertEqual(table.loc[0, "organism"], "")
+            self.assertEqual(table.loc[0, "taxonomy"], "")
+            self.assertEqual(table.loc[0, "assembly_level"], "")
+
 
 if __name__ == "__main__":
     unittest.main()

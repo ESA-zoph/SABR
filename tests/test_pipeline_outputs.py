@@ -8,11 +8,20 @@ from crispr_phage_predictor.pipeline import (
     build_crispr_targeting_evidence_matrix,
     build_exact_match_heatmap,
     build_resistance_evidence_matrix,
+    summarize_crispr_arrays,
     summarize_pam_subtype_support,
+    summarize_spacer_hits,
+    summarize_spacers,
 )
 
 
 class PipelineOutputTests(unittest.TestCase):
+    def test_empty_summary_tables_keep_headers(self):
+        self.assertIn("array_id", summarize_crispr_arrays([]).columns)
+        self.assertIn("spacer_id", summarize_spacers([]).columns)
+        self.assertIn("pam_support_level", summarize_spacer_hits([]).columns)
+        self.assertIn("repeat_pam_subtype_agreement", summarize_pam_subtype_support([]).columns)
+
     def test_builds_exact_match_heatmap(self):
         bacteria = [
             FastaRecord("b1.fna", "c1", "c1", "ATGC"),
@@ -182,6 +191,40 @@ class PipelineOutputTests(unittest.TestCase):
         self.assertEqual(annotated_hits[0].pam_sequence, "GG")
         self.assertTrue(annotated_hits[0].pam_match)
         self.assertEqual(annotated_hits[0].seed_region, "3prime:1-4")
+        self.assertEqual(annotated_hits[0].seed_mismatches, 0)
+
+    def test_reverse_strand_seed_uses_strand_oriented_protospacer(self):
+        hits = [
+            SpacerHit(
+                bacterium_id="b1.fna",
+                array_id="array_1",
+                phage_id="p1.fna",
+                spacer_id="spacer_1",
+                phage_contig_id="p1",
+                start=10,
+                end=17,
+                strand="-",
+                identity=1.0,
+                mismatches=0,
+                alignment_length=8,
+                spacer_length=8,
+                coverage=1.0,
+                evalue=None,
+                bitscore=None,
+                spacer_sequence="AACCGGTA",
+                protospacer_sequence="TACCGGTT",
+                genomic_downstream_flank="GGAAA",
+            )
+        ]
+
+        annotated_hits = annotate_spacer_hits_with_pam(
+            hits,
+            default_pam_rule="genomic_3prime:GG",
+            seed_length=4,
+        )
+
+        self.assertTrue(annotated_hits[0].pam_match)
+        self.assertEqual(annotated_hits[0].seed_region, "3prime:5-8")
         self.assertEqual(annotated_hits[0].seed_mismatches, 0)
 
     def test_summarizes_exploratory_pam_subtype_support(self):

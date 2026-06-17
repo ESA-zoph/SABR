@@ -33,11 +33,72 @@ Current best Cas subtype model:
 - Runtime artifact: `models/cas_subtype_extratrees.joblib`.
 - Method: ExtraTrees on repeat/array features.
 - Training table: `data/training/repeats_cas_types_crisprcasdb_sql_candidate.csv`.
-- CRISPRCasdb-only genome-holdout performance: accuracy 0.9455.
+- Selected SABR ExtraTrees model, trained on the CRISPRCasdb-derived
+  annotation table, genome-holdout performance: accuracy 0.9455.
 - Transfer to compatible rows in the current SABR table: accuracy 0.9811.
 - Reciprocal current-table-to-CRISPRCasdb transfer: accuracy 0.9559.
 - Weak/confusable regions remain Type III-heavy, especially `III-B`, `III-D`, and adjacent Type I-B/I-C/I-A boundaries.
 - Caveat: CRISPRCasdb SQL labels are computational candidates, not final gold-standard truth.
+
+Latest independent CCTyper validation:
+
+- VirtualBox/CCTyper package imported from `cctyper_full_balanced_validation_package.zip`.
+- Extracted under `data/validation/cctyper_full_balanced_validation_package/`.
+- Reproducible evaluator: `docs/evaluate_cctyper_strict_validation.py`.
+- Outputs: `data/validation/cctyper_strict_validation/`.
+- Strict CCTyper screen retained 20 genomes: 6 I-B, 5 I-C, 5 III-A, 1 III-B, and 3 III-D.
+- Expected-subtype array-level evaluation retained 25 rows: 8 I-B, 6 I-C, 6 III-A, and 5 III-D.
+- Selected SABR ExtraTrees evaluation on these rows: 23/25 correct, accuracy 0.9200.
+- Errors: two I-C rows predicted as III-B.
+- Important caveat: the strict III-B genome did not contribute an expected-subtype III-B array row; Type III-B remains insufficiently tested at array level.
+
+Current deployment/package direction:
+
+- Release target should be `v0.1-beta` as a local Streamlit app first, not a hosted public web service yet.
+- Scientific positioning must remain: CRISPR spacer-targeting evidence and repeat-derived subtype prediction, not phenotype-level phage resistance prediction.
+- Added public-facing deployment docs:
+  - `DEPLOYMENT.md`
+  - `RELEASE_CHECKLIST.md`
+- Updated `README.md` with current model-artifact expectations, validation summary, and public-beta strategy.
+- Added tiny synthetic smoke-test FASTAs under `data/examples/basic_demo/`.
+- Smoke-test result for those examples: 1 candidate array, 2 extracted spacers, 1 spacer-protospacer hit.
+- Updated app sidebar to show whether `models/cas_subtype_extratrees.joblib` is present.
+- Updated pipeline stage text so Cas subtype prediction and PAM/PFS evaluation are no longer described as only planned.
+- Updated `.gitignore` to avoid accidentally packaging bulky CCTyper runs, imported validation zip files, extracted raw validation packages, local outputs, and temp/cache folders.
+- Focused verification passed after cleanup:
+  - `py_compile` for edited Python files.
+  - 11 focused tests covering pipeline output, Cas prediction, external dataset evaluation, and CCTyper import.
+- Full release-readiness verification now passed:
+  - `python -m compileall -q app.py crispr_phage_predictor docs/evaluate_cctyper_strict_validation.py docs/generate_manuscript_docx.py`
+  - full pytest suite: 86 passed.
+  - Streamlit headless startup on port 8502 returned HTTP 200 OK.
+- Runtime model I/O improvement:
+  - `crispr_phage_predictor/ml/model_artifact.py` now caches model artifact loading and SHA-256 hashing with bounded `lru_cache`.
+  - `save_artifact()` clears those caches to avoid stale artifacts after retraining/export.
+- Main packaging blocker: the selected runtime model artifact is about 410 MB; public distribution needs Git LFS, a release asset, Zenodo/institutional storage, or Docker image packaging rather than ordinary Git.
+- Next practical release steps:
+  1. Run the full test suite in a clean workspace.
+  2. Create a fresh virtual environment and verify install from `requirements.txt` plus `requirements-ml.txt`.
+  3. Run `streamlit run app.py` and manually test the synthetic example FASTAs.
+  4. Decide model artifact distribution.
+  5. Keep bulky research/provenance files out of the deployable release package while documenting reproducibility paths.
+
+Public deployment decision:
+
+- Best route for users to open a browser and run analysis:
+  - Public beta/demo: Hugging Face Spaces using Docker + Streamlit.
+  - Serious lab/private-genome use: same app as a local Docker image.
+- Rationale:
+  - Hugging Face Spaces is designed for hosted ML/demo apps and supports Docker-based apps.
+  - Docker gives control over Python version, Streamlit startup, model download/cache paths, and future system dependencies such as BLAST+/MinCED.
+  - The 410 MB `models/cas_subtype_extratrees.joblib` artifact should not be committed to ordinary Git; distribute through a Hugging Face model repo, GitHub Release asset, Zenodo/institutional storage, or include it in a controlled Docker image layer.
+  - Public hosted demo should include a visible warning not to upload sensitive unpublished genomes.
+  - Local Docker should be the recommended path for real lab analysis involving private or large genomes.
+- Next session should start with:
+  1. Create Docker deployment files (`Dockerfile`, optional `.dockerignore`, startup command).
+  2. Add model artifact download/cache strategy.
+  3. Add Hugging Face Spaces README/app metadata if deploying there.
+  4. Test Docker build/run locally if Docker is available.
 
 Recent production behavior:
 
@@ -246,11 +307,10 @@ Current external-backend integration status:
 - BLAST+ is installed on Windows and visible to the app (`blastn` and `makeblastdb` are available on PATH).
 - MinCED is not currently installed on Windows PATH.
 - The GUI now uses an "Auto recommended" backend mode by default:
-  - keep CRISPR detection on the internal exact-repeat detector by default for responsive whole-genome uploads
-  - MinCED-compatible detection is available as a manual benchmarking option
-  - current Windows-friendly MinCED-compatible backend is the Python package Diced (`diced>=0.1.3`), installed locally in the project venv
+  - use MinCED-compatible detection when Diced or `minced` is available
+  - fall back to the internal exact-repeat detector when no MinCED-compatible backend is available
+  - current Windows-friendly MinCED-compatible backend is the Python package Diced (`diced>=0.1.3`), installed locally in the project venv and Docker image
   - if Diced is absent, the app can still use a `minced` command on PATH
-  - initial Diced whole-genome timing checks timed out on local example data, so it should not be the default until performance is benchmarked or constrained
   - use BLASTN for spacer-phage matching when available, otherwise fall back to the internal exact matcher
   - keep manual backend selection as an advanced/debugging option
 - The internal detector and exact matcher should remain available as transparent reproducible baselines for benchmarking and troubleshooting rather than being deleted.
@@ -258,7 +318,7 @@ Current external-backend integration status:
 - BLASTN hit outputs now include identity, alignment length, spacer length, coverage, e-value, and bitscore.
 - Evidence matrix outputs now include best identity percent and best coverage percent.
 - Streamlit analysis runs now show progress bars for CRISPR detection and spacer-phage matching.
-- CRISPR detection progress updates per bacterial FASTA record and displays elapsed time plus estimated remaining time based on completed records.
+- Internal CRISPR detection progress updates during repeat-length scan steps so long single-record genomes no longer look idle.
 
 Latest full-run output review:
 
@@ -2183,7 +2243,8 @@ CRISPRCasdb SQL candidate-only table, genome-holdout:
 
 Interpretation:
 
-- CRISPRCasdb-only performs better than the current table under genome-holdout
+- The selected-model training annotation table performs better than the earlier
+  development table under genome-holdout
   internal validation.
 - The nearest-repeat baseline is also very high, suggesting strong repeat-family
   structure and possible database-specific consistency.
@@ -2199,7 +2260,7 @@ Interpretation:
 
 Question:
 
-- If CRISPRCasdb-only looks better internally, does it transfer to the current
+- If the selected-model annotation training table looks better internally, does it transfer to the earlier
   SABR training table?
 - Conversely, does the current model transfer to CRISPRCasdb candidate rows?
 
@@ -2243,14 +2304,16 @@ Current table train -> CRISPRCasdb test:
 
 Interpretation:
 
-- CRISPRCasdb-trained ExtraTrees transfers very well to rows in the current
+- The selected SABR ExtraTrees architecture trained on CRISPRCasdb-derived
+  annotations transfers very well to rows in the earlier
   table whose subtypes exist in CRISPRCasdb training.
 - The current table also transfers well to CRISPRCasdb rows, but is weaker for
   `III-B` and `III-D`.
 - These numbers are encouraging but not a fully independent biological
   validation because the current table and CRISPRCasdb candidates share
   database ancestry.
-- The result supports training an experimental CRISPRCasdb-only runtime model
+- The result supports training a selected SABR runtime candidate from the
+  CRISPRCasdb-derived annotation table
   artifact, but final replacement should wait for curated/literature/CCTyper
   external validation and probability calibration.
 
@@ -2286,7 +2349,7 @@ Strong contribution:
   - nearest-repeat baselines
   - ExtraTrees/random forest/hybrid/hierarchical comparisons
   - genome/genus holdout splits
-  - CRISPRCasdb-only controls
+  - controls using only the larger computational annotation-derived table
   - cross-dataset transfer tests
   - dimensionality-reduction figures
   - explicit negative results from naive data augmentation
@@ -2296,7 +2359,8 @@ Current best predictor interpretation:
 - Safest current production candidate remains the flat ExtraTrees model trained
   on `repeats_cas_types_augmented_vink_genbank_targeted.csv`.
 - Best documented genus-holdout accuracy for this model: 0.9152.
-- CRISPRCasdb-only ExtraTrees gives stronger internal genome-holdout accuracy
+- The selected SABR ExtraTrees model trained on the larger computational
+  annotation-derived table gives stronger internal genome-holdout accuracy
   at 0.9455 and transfers well to the current table, but it should remain an
   experimental candidate until externally validated against curated/literature
   or CCTyper-supported labels.
@@ -2332,7 +2396,8 @@ Priority order:
    - expected calibration error
    - accuracy by confidence threshold
    - per-subtype confidence behavior
-2. Export an experimental CRISPRCasdb-only model artifact separately from the
+2. Export a selected SABR model artifact trained on the larger computational
+   annotation-derived table separately from the
    production artifact:
    - keep `models/cas_subtype_extratrees.joblib` as production for now
    - write something like `models/cas_subtype_extratrees_crisprcasdb_experimental.joblib`
@@ -2347,7 +2412,8 @@ Priority order:
    - CCTyper-supported labels if WSL/networking can be solved or run elsewhere
    - focus on Type III-B and Type III-D
 5. Only after calibration and independent validation decide whether the
-   CRISPRCasdb-only model should replace the current production model.
+   selected SABR candidate trained on the larger annotation-derived table should
+   replace the earlier production model.
 
 ## Latest Calibration and Experimental Model Artifact
 
@@ -2380,7 +2446,7 @@ Current production-candidate calibration:
 - Output directory:
   `docs/calibration/current_best/`
 
-CRISPRCasdb-only calibration:
+Selected SABR model calibration on its annotation-derived internal holdout:
 
 - Dataset:
   `data/training/repeats_cas_types_crisprcasdb_sql_candidate.csv`
@@ -2390,7 +2456,7 @@ CRISPRCasdb-only calibration:
 - Accuracy: 0.945495.
 - Mean predicted confidence: 0.922668.
 - Expected calibration error: 0.036156.
-- Interpretation: CRISPRCasdb-only ExtraTrees is much better calibrated
+- Interpretation: the selected SABR ExtraTrees model is much better calibrated
   internally than the current production-candidate model, but this remains an
   internal computational-label validation.
 - Output directory:
@@ -2439,7 +2505,8 @@ Caveat:
 
 - This is now the local runtime model because it has the best internal and
   transfer performance so far.
-- Manuscript language should still call it CRISPRCasdb-trained / computationally
+- Manuscript language should describe it as the selected SABR ExtraTrees
+  subtype model trained on computationally
   derived until independent curated or CCTyper-supported validation is added.
 
 ## Latest Manuscript Export
@@ -2476,7 +2543,7 @@ New script:
 
 Purpose:
 
-- Project the held-out CRISPRCasdb-only test set into PCA and sampled t-SNE
+- Project the selected-model held-out annotation-table test set into PCA and sampled t-SNE
   feature space.
 - Overlay correct versus wrong calls.
 - Plot wrong calls by true subtype.
@@ -2572,16 +2639,1196 @@ Validation:
 ## Recommended Next Step
 
 The next best scientific step is independent validation, not more internal
-CRISPRCasdb-only optimization.
+optimization using only the annotation-derived development source.
 
 Priority order:
 
 1. Build a CCTyper/literature-supported validation table focused on independent
    labels, especially `III-B`, `III-D`, and adjacent Type I-B/I-C/I-A cases.
-2. Evaluate the current CRISPRCasdb-trained runtime model on that independent
+2. Evaluate the selected SABR ExtraTrees subtype model on that independent
    table and report accuracy, calibration, and subtype-level errors.
 3. If CCTyper remains blocked locally, run it on Linux/HPC/Colab and import the
    output with the existing SABR CCTyper collectors.
 4. Expand the small resistance/sensitivity benchmark panel separately, keeping
    it framed as CRISPR targeting evidence validation rather than direct
    phenotypic resistance prediction.
+
+## Latest Docker Runtime and UX Validation
+
+Date:
+
+- 2026-06-06
+
+Docker status:
+
+- Docker Desktop on Windows is working after `wsl --shutdown` resolved a
+  temporary Docker Desktop Linux engine `500 Internal Server Error`.
+- The Docker image now uses `python:3.11-slim-bookworm`.
+- The Dockerfile installs:
+  - Debian `ncbi-blast+`, exposing `blastn` and `makeblastdb`.
+  - `requirements-external.txt`, currently `diced>=0.1.3`.
+- Container-level verification showed:
+  - `blastn`: available.
+  - `makeblastdb`: available.
+  - `diced`: available.
+- Runtime model mounting works with:
+
+```powershell
+docker run --rm -p 7860:7860 `
+  -v "${PWD}\models\cas_subtype_extratrees.joblib:/app/models/cas_subtype_extratrees.joblib:ro" `
+  sabr:local
+```
+
+- The app reports the mounted selected ExtraTrees artifact as available
+  at about `391.2 MB`.
+
+Recommended Docker run command for persistent outputs:
+
+```powershell
+docker run --rm -p 7860:7860 `
+  -v "${PWD}\models\cas_subtype_extratrees.joblib:/app/models/cas_subtype_extratrees.joblib:ro" `
+  -v "${PWD}\outputs:/app/outputs" `
+  sabr:local
+```
+
+Reason:
+
+- Without the `/app/outputs` bind mount, completed Streamlit analyses are saved
+  inside the short-lived Docker container rather than under the Windows
+  workspace `outputs/runs/`.
+
+User-facing runtime behavior:
+
+- Sidebar now reports:
+  - MinCED-compatible detection as `diced` when available.
+  - BLAST+ as available when `blastn` and `makeblastdb` are installed.
+  - Selected ExtraTrees artifact availability and size.
+- `Auto recommended` now selects MinCED-compatible detection when Diced or a
+  `minced` command is available, and falls back to the internal detector when
+  no MinCED-compatible backend exists.
+- BLASTN is selected automatically when available for spacer matching.
+- The internal exact-repeat detector remains available manually as a transparent
+  baseline.
+
+Fragmented FASTA safeguard:
+
+- A highly fragmented bacterial FASTA, `Ecol167.fasta`, was observed with
+  `76,543` FASTA records.
+- Internal CRISPR detection initially displayed a very large estimated runtime
+  because progress was only updated after each record and the input contained
+  tens of thousands of records.
+- The Streamlit app now warns when a bacterial upload has at least `1,000`
+  FASTA records and blocks internal CRISPR detection when any bacterial file
+  has at least `5,000` records.
+- User guidance is to use a better assembled genome, filter short contigs, or
+  use an external detector before retrying very fragmented assemblies.
+
+New helper script:
+
+- `scripts/filter_fasta_records.py`
+- Purpose:
+  - filter a fragmented FASTA to longer records for SABR testing.
+  - sort retained records by length.
+  - optionally cap to the longest N records.
+- Example:
+
+```powershell
+.\.venv\Scripts\python.exe scripts\filter_fasta_records.py Ecol167.fasta data\examples\Ecol167_filtered.fasta --min-length 10000 --max-records 500
+```
+
+Progress-bar improvement:
+
+- Internal CRISPR detection now reports scan-level progress during repeat-length
+  scanning.
+- A long single-record genome no longer sits indefinitely at
+  `Preparing CRISPR array detection...`; it advances through scan steps.
+- The app progress text now uses `CRISPR detection: X/Y scan steps`.
+
+Latest Docker smoke tests:
+
+- Tiny `data/examples/basic_demo/` run succeeded.
+- Real example run with Diced/BLASTN completed very quickly and produced
+  plausible positive targeting-evidence results.
+- Latest inspected Docker-internal run:
+  `/app/outputs/runs/20260606_192711`.
+- Run configuration:
+  - CRISPR detection: MinCED-compatible (`detection_method=minced`,
+    `detection_backend_detail=diced`).
+  - Spacer matching: BLASTN.
+  - BLAST minimum identity: `0.9`.
+  - BLAST minimum coverage: `0.95`.
+  - Full-query requirement: `false`.
+  - PAM mode: auto from predicted subtype.
+  - Cas predictions: 15.
+- Runtime:
+  - CRISPR detection: `0.233` seconds.
+  - BLAST matching: `0.510` seconds.
+  - Total: `0.829` seconds.
+- Input scale:
+  - 4 bacterial files/sequences.
+  - 8 phage files/sequences.
+  - Duplicate records excluded: 2 bacterial, 5 phage.
+- Output:
+  - 15 candidate arrays.
+  - 715 extracted spacers.
+  - 22 spacer hits.
+  - 32 evidence-matrix rows.
+- Top positive evidence rows:
+  - `Paeruginosa_PA14.fasta` vs `PhageJBD18.fasta`:
+    score `99.97`, 5 unique matching spacers, PAM compatible.
+  - `Paeruginosa_PA14.fasta` vs `PhageJBD67.fasta`:
+    score `99.97`, 4 unique matching spacers, PAM compatible.
+  - `Sislandicus_REY15A.fasta` vs `SIRV2.fasta`:
+    score `99.36`, 5 unique matching spacers, PAM compatible.
+  - `Paeruginosa_PA14.fasta` vs `PhageJBD25.fasta`:
+    score `82.95`, 1 unique matching spacer, PAM compatible.
+
+Validation:
+
+- Focused compile check passed for:
+  - `app.py`
+  - `crispr_phage_predictor/crispr.py`
+  - `crispr_phage_predictor/pipeline.py`
+  - `scripts/filter_fasta_records.py`
+- Focused tests passed:
+  - `tests/test_crispr_detection.py`
+  - `tests/test_pipeline_outputs.py`
+  - result: 8 passed.
+
+Latest hit-detail UI addition:
+
+- Added a first-pass hit-detail workflow for bacteria-phage heatmap cells.
+- The custom heatmap itself is still static HTML, but the results page now
+  provides a `Select heatmap cell` control listing nonzero bacteria-phage cells
+  by score and spacer count plus an `Open hit details` button.
+- Pressing `Open hit details` switches the Streamlit app to a dedicated
+  hit-details view using session state, with a `Back to results` button.
+- Follow-up navigation hardening:
+  - selected heatmap cell is stored immediately when chosen
+  - `Open hit details` also sets the URL/query state to `view=hit_details`
+  - `Back to results` sets URL/query state to `view=results`
+  - this makes the dedicated view less dependent on a single transient button
+    event and easier to diagnose from the browser URL.
+- Further fix after the details button appeared to reset the page:
+  - latest run ID is stored after each analysis
+  - `Open hit details` writes `view`, `bacterium`, `phage`, and `run` query
+    parameters
+  - if Streamlit reruns or reloads before in-memory results are available, the
+    detail page reloads `evidence_matrix.csv` and `spacer_hits.csv` from the
+    saved `outputs/runs/{run_id}` folder
+  - this is why future Docker runs should include the persistent outputs bind
+    mount.
+- For the selected bacteria-phage pair, the dedicated page displays:
+  - targeting score
+  - unique matching spacers
+  - total spacer hits
+  - PAM/PFS summary
+  - hit-level table with array ID, spacer ID, phage contig, coordinates, strand,
+    identity, coverage, predicted subtype, PAM/PFS rule/sequence/support, and
+    seed mismatches
+  - per-hit spacer/protospacer alignment text
+  - phage-reference context with the protospacer bracketed between upstream and
+    downstream flanks
+  - oriented 5-prime/3-prime protospacer flanks and genomic upstream/downstream
+    flanks
+- Circos-style genome visualization and optional GenBank annotation upload are
+  intentionally deferred until the hit-detail workflow is stable.
+- Validation:
+  - `python -m py_compile app.py` passed.
+  - Docker image rebuilt successfully.
+
+## Latest Independent Validation Setup: VirtualBox CCTyper Run
+
+Date:
+
+- 2026-05-25
+
+Linux/CCTyper environment:
+
+- A VirtualBox Ubuntu environment is available for running
+  CRISPRCasTyper/CCTyper independently of the Windows SABR runtime.
+- CRISPRCasTyper version `1.8.0` was installed in a conda environment named
+  `cctyper`.
+- Initial startup failed because the launcher could not import
+  `pkg_resources`; reinstalling/downgrading `setuptools` restored the launcher.
+- `cctyper --help` now runs successfully.
+- The recurring `pkg_resources` deprecation warning and a pandas
+  `FutureWarning` during locus connection are dependency warnings and did not
+  prevent successful output generation.
+
+Input panel:
+
+- The VM input folder is `~/cctyper/bacteria/`.
+- It currently contains 19 bacterial FASTA files copied into one flat folder.
+- Because the original resistant/susceptible subfolder organization was not
+  retained in the VM folder, this run is suitable for independent
+  CCTyper-supported Cas subtype validation, but not yet for direct
+  resistant-versus-susceptible outcome comparisons.
+
+Successful pilot run:
+
+- `Sthermo_DGCC7710.fasta` was successfully processed with:
+
+```bash
+cctyper -t 4 bacteria/Sthermo_DGCC7710.fasta cctyper_runs/Sthermo_DGCC7710_test2 --simplelog
+```
+
+- The run completed ORF prediction, HMMER Cas profiling, MinCED CRISPR
+  prediction, CRISPR-near-Cas BLAST analysis, repeat subtype prediction,
+  locus connection, and plot generation.
+
+Batch result:
+
+- Main output directory: `cctyper_runs_batch1/`.
+- Manifest initially created for all 19 FASTA inputs:
+  `cctyper_manifest_batch1.csv`.
+- Eleven batch-1 genomes generated `crisprs_near_cas.tab`, which are usable by
+  the existing SABR CCTyper importer.
+- The eight genomes without an importable batch-1
+  `crisprs_near_cas.tab` were:
+  - `aeruginosa_PAO1`
+  - `aureus_NCTC_8325`
+  - `cholerae_O1_biovar_El_Tor_N16`
+  - `coli_K-12_MG1655_F+_deriv`
+  - `faecalis_V583`
+  - `monocytogenes_EGD-e`
+  - `smegmatis_mc2_155`
+  - `subtilis_subsp._subtilis_168`
+- These eight were rerun under `cctyper_runs_batch2/`.
+- Rerun interpretation:
+  - `aeruginosa_PAO1`, `cholerae_O1_biovar_El_Tor_N16`,
+    `faecalis_V583`, `smegmatis_mc2_155`, and
+    `subtilis_subsp._subtilis_168` reported `No CRISPRs found.`
+  - `coli_K-12_MG1655_F+_deriv` reported `No operons found.`
+  - `aureus_NCTC_8325` and `monocytogenes_EGD-e` completed analysis but did
+    not produce `crisprs_near_cas.tab` usable by the current importer.
+  - Batch 2 therefore produced zero additional `crisprs_near_cas.tab` files.
+
+New local SABR utility:
+
+- Added `crispr_phage_predictor/ml/run_cctyper_batch.py`.
+- Purpose:
+  - scan a bacterial FASTA folder, including optional
+    `resistant/`/`susceptible/` subfolders
+  - execute CCTyper for each FASTA
+  - write a `cctyper_manifest.csv` compatible with
+    `crispr_phage_predictor.ml.collect_cctyper_training`
+  - write a batch execution summary
+- Added focused tests at `tests/test_ml_run_cctyper_batch.py`.
+- Validation: 2 focused tests pass.
+
+Immediate import step:
+
+- In Ubuntu, create `cctyper_manifest_usable.csv` containing only the eleven
+  batch-1 genomes whose output directories include
+  `crisprs_near_cas.tab`.
+- Copy `cctyper_runs_batch1/` and `cctyper_manifest_usable.csv` into
+  `data/curation/` in the Windows SABR workspace.
+- Then import the CCTyper-supported rows with:
+
+```bash
+python -m crispr_phage_predictor.ml.collect_cctyper_training data/curation/cctyper_manifest_usable.csv --output data/curation/cctyper_validation_repeats_cas_types.csv
+```
+
+Interpretation:
+
+- This gives SABR its first independent CCTyper-supported evaluation material
+  for repeat-derived Cas subtype comparisons.
+- It is not yet an independent resistance/susceptibility validation panel,
+  because the VM copy lost original phenotype grouping and CCTyper itself
+  annotates CRISPR-Cas loci rather than phage-resistance phenotype.
+
+## Latest CCTyper Import and External Subtype Evaluation
+
+Imported files and outputs:
+
+- Copied VM result directories into the SABR workspace root:
+  - `cctyper_runs_batch1/`
+  - `cctyper_runs_batch2/`
+- Copied original all-input manifest:
+  `cctyper_manifest_batch1.csv`.
+- Generated the filtered, importer-safe manifest:
+  `data/curation/cctyper_manifest_usable.csv`.
+- The filtered manifest contains 11 genomes with available
+  `crisprs_near_cas.tab` results.
+- Imported validation table:
+  `data/curation/cctyper_validation_repeats_cas_types.csv`.
+
+Imported CCTyper-supported validation rows:
+
+- Total array rows: 25.
+- Subtype counts:
+  - `I-E`: 11
+  - `I-A`: 8
+  - `I-F`: 3
+  - `II-A`: 1
+  - `II-C`: 1
+  - `III-A`: 1
+
+External evaluation against the selected SABR ExtraTrees subtype model:
+
+- Training source:
+  `data/training/repeats_cas_types_crisprcasdb_sql_candidate.csv`.
+- Training rows after subtype count filtering: 23,478.
+- External CCTyper test rows: 25.
+- Evaluated rows: 25.
+- Excluded rows/subtypes: 0.
+- Accuracy: `1.0000` (25/25 rows).
+- Each represented subtype was classified correctly:
+  - `I-A`: 8/8
+  - `I-E`: 11/11
+  - `I-F`: 3/3
+  - `II-A`: 1/1
+  - `II-C`: 1/1
+  - `III-A`: 1/1
+
+Interpretation and limitation:
+
+- This is an encouraging first independent CCTyper-supported evaluation of the
+  selected SABR repeat-derived ExtraTrees subtype model.
+- The validation panel is small and strongly concentrated in common Type I
+  classes.
+- It contains only one `III-A` row and no `III-B` or `III-D` rows, so it does
+  not yet address the model's main weak/confusable Type III regions.
+- These results support the model's current use as a subtype-prediction
+  candidate, but do not establish general external accuracy or validate
+  phage-resistance predictions.
+
+Small importer correction:
+
+- `crispr_phage_predictor/ml/collect_cctyper_training.py` now preserves blank
+  optional manifest metadata as empty fields rather than importing them as
+  the string `nan`.
+- Added regression coverage in
+  `tests/test_ml_collect_cctyper_training.py`.
+- Focused CCTyper tests pass: 4 tests.
+
+## Manuscript Framing and Advanced Figure Revision
+
+Date:
+
+- 2026-05-27
+
+Required model terminology correction:
+
+- From this point forward, describe the deployed/candidate subtype classifier as
+  the **selected SABR ExtraTrees subtype model**.
+- Do not describe it as a "CRISPRCasdb model" or imply that SABR is being
+  compared against a CRISPR database model.
+- `CRISPRCasdb` is a provenance label for computational training annotations
+  used during SABR model development, not a competing predictive method.
+- Avoid calling the model "optimal" until the enriched independent Type III /
+  adjacent Type I validation panel is complete; "selected" is the defensible
+  manuscript term at the current evidence level.
+
+Manuscript revision:
+
+- Rewrote `docs/SABR_manuscript_draft.md` as a fuller scientific first draft.
+- Regenerated `docs/SABR_manuscript.docx` from that draft.
+- The manuscript now covers:
+  - SABR targeting-evidence framing and implemented workflow;
+  - training-label provenance and model-selection logic;
+  - architecture selection, candidate-annotation experiments, selected-model
+    performance, calibration, error analysis, and CCTyper pilot validation;
+  - explicit limitations and the ongoing enriched independent validation step.
+
+Equations now included in the manuscript:
+
+- Targeting-evidence score terms:
+  - `S_spacer = min(35, 18 * log2(n_s + 1))`
+  - `S_identity = min(25, 25 * I_max * C_max)`
+  - piecewise `S_PAM` and `S_seed`
+  - `S_subtype = min(10, 10 * q_max)` when confidence is available
+  - `S_target = min(C_PAM, max(0, S_spacer + S_identity + S_PAM + S_seed + S_subtype))`
+  - `C_PAM = 39` when PAM/PFS is evaluated but unsupported for every hit,
+    otherwise `C_PAM = 100`
+- Evaluation formulas:
+  - subtype precision, recall, and F1
+  - expected calibration error (ECE)
+
+New manuscript figure generator:
+
+- Added `docs/generate_manuscript_advanced_figures.py`.
+- New figure assets in `docs/manuscript_assets/`:
+  - `targeting_score_heatmap.png/.svg`
+  - `architecture_selection_roc.png/.svg`
+  - `selected_model_roc_focus_subtypes.png/.svg`
+  - `selected_model_confusion_heatmap.png/.svg`
+  - `selected_model_tsne_group_and_subtype_panels.png/.svg`
+  - `architecture_selection_roc_metrics.csv`
+
+Revised figure-generation naming:
+
+- Existing manuscript-facing generators now label the classifier as the
+  selected SABR model and label datasets as development/annotation sources
+  rather than naming a database as if it were a separate model.
+- New neutral selected-model interpretability and error assets were generated
+  under `docs/manuscript_assets/selected_model_*` and
+  `docs/interpretability/selected_sabr_extratrees/`.
+- The Word manuscript now embeds a 13-figure sequence including targeting
+  evidence heatmap, ROC curves, normalized confusion heatmap, t-SNE panels,
+  calibration, feature interpretation, error pairs, and the CCTyper pilot.
+
+Architecture-selection ROC results:
+
+- Common genus-held-out development split, probability-capable models only.
+- Macro AUC is averaged over test-evaluable one-vs-rest subtypes.
+- Logistic regression:
+  - accuracy `0.8337`
+  - micro AUC `0.9515`
+  - macro AUC `0.9144`
+- Random forest:
+  - accuracy `0.9128`
+  - micro AUC `0.9916`
+  - macro AUC `0.9719`
+- ExtraTrees:
+  - accuracy `0.9152`
+  - micro AUC `0.9927`
+  - macro AUC `0.9725`
+
+Selected-model presentation:
+
+- Genome-held-out selected SABR ROC figure highlights difficult boundary
+  classes:
+  - micro-average AUC `0.995`
+  - `III-A` AUC `0.992`
+  - `III-B` AUC `0.952`
+  - `III-D` AUC `0.943`
+  - `I-B` AUC `0.988`
+  - `I-C` AUC `0.999`
+- The normalized confusion heatmap and t-SNE subtype-focus panel reinforce
+  that Type III-B/III-D and adjacent Type I classes remain the main unresolved
+  independent-validation target.
+
+Verification:
+
+- Regenerated advanced figures and `docs/SABR_manuscript.docx`.
+- Validated revised document/figure scripts with `python -m py_compile`.
+- The earlier independent CCTyper pilot remains verified at `25/25` correct
+  arrays and is explicitly presented as limited by the absence of `III-B` and
+  `III-D` validation rows.
+
+## Sensitivity/resistance prediction database expansion
+
+New direction:
+
+- Expand SABR from CRISPR targeting-evidence mapping toward bacteria-phage
+  sensitivity/resistance and EOP prediction.
+- Keep experimental phenotype/EOP observations separate from SABR evidence
+  scores in `data/curation/phage_host_interactions.tsv`.
+- Preserve anti-CRISPR and other defense evidence fields so model features can
+  explain exceptions where spacer/PAM evidence does not imply resistance.
+
+Current database foundation:
+
+- Added `crispr_phage_predictor/interactions.py` with controlled schema,
+  validation, EOP parsing, EOP class normalization, and susceptibility-label
+  derivation.
+- Added `tests/test_interactions.py` for schema and parser coverage.
+- Added `scripts/normalize_phage_host_interactions.py`.
+- Added `scripts/import_mirzaei_nilsson_2015_eop.py` for reproducible import
+  of Mirzaei and Nilsson 2015 S1 DOCX EOP matrix.
+- Current master table: `data/curation/phage_host_interactions.tsv`.
+- Current imported source file: `data/curation/mirzaei_nilsson_2015_s1.docx`.
+- Current derived source table: `data/curation/mirzaei_nilsson_2015_eop.tsv`.
+
+Current interaction coverage:
+
+- `562` total curated/measured interaction rows.
+- `13` initial hand-curated rows:
+  - PA14/JBD plaque-assay CRISPR-resistance rows from Cady et al. 2012.
+  - DGCC7710/phage 2972 BIM EOP rows from Magadan et al. 2012 Table 3.
+- `257` programmatically imported EOP rows from Mirzaei and Nilsson 2015 S1:
+  - six phages `SU10`, `SU16`, `SU27`, `SU32`, `SU57`, `SU63`;
+  - ECOR, ESBL E. coli, SARA, and SARB bacterial collections;
+  - source cells with blanks were not treated as measured interactions.
+- `292` programmatically generated rows from embedded open-literature tables:
+  - `Sofy2021_KPP5`: 31 KPP-5 host-range/EOP-category rows.
+  - `Latka2021_K23Klebsiella`: 24 K23 Klebsiella numeric EOP rows.
+  - `Singh2025_KpCocktail`: 12 KPKp/KSKp/cocktail numeric EOP rows.
+  - `Abdelhadi2021_STM2`: 108 Salmonella/non-Salmonella EOP-category rows.
+  - `Wintachai2022_vABWU2101`: 22 Acinetobacter/control numeric EOP rows.
+  - `Wintachai2024_vECPW8`: 20 MDR APEC numeric EOP rows.
+  - `Kim2022_KP1_KP12`: 40 Klebsiella/non-Klebsiella percent-EOP rows,
+    converted to ratios in the SABR schema.
+  - `Ciacci2018_vB_Kpn_F48`: 14 K. pneumoniae numeric EOP rows.
+  - `Peng2025_vB_Kp_XP4`: 21 K. pneumoniae percent-EOP host-range rows,
+    converted to ratios in the SABR schema.
+
+Next curation targets:
+
+- Add source-ledger rows and import/curate additional EOP matrices from open
+  supplementary tables in PLOS, Frontiers, BMC/Virology Journal, MDPI, and
+  Microbiology Spectrum.
+- Prioritize strain-level EOP matrices with explicit host strain names,
+  phage names/accessions, reference host, and methods.
+- Add anti-CRISPR annotation columns later by linking phage genomes through
+  AcrFinder/PADLOC/DefenseFinder-style outputs where accessioned genomes are
+  available.
+
+Genome-linkage foundation:
+
+- Added `crispr_phage_predictor/accession_linkage.py` with a controlled
+  accession-linkage schema and coverage calculation.
+- Added `tests/test_accession_linkage.py`.
+- Added `data/curation/accession_linkage.tsv`.
+- Added `scripts/report_accession_linkage_coverage.py`.
+- Current linkage coverage for `562` interaction rows:
+  - `145` rows have linked phage genome accessions.
+  - `13` rows have linked bacterial genome accessions.
+  - `13` rows are full pair-genome-ready.
+- Hybrid mode enabled:
+  - Added `reference_proxy` linkage status for public reference host genomes.
+  - `562/562` rows now have either exact host genome linkage or a downloaded
+    reference-proxy host genome.
+  - `145/562` rows are hybrid-ready: exact phage genome plus exact/alias/proxy
+    host genome.
+  - `13/562` rows remain strict full pair-genome-ready.
+- Added `scripts/download_accession_linkage_genomes.py`.
+- Downloaded/linked public FASTA records under `data/curation/downloads/` and
+  recorded them in `data/curation/downloaded_records.tsv`.
+- New downloaded phage genomes include:
+  - `JBD18`, `JBD25`, `JBD67`, `2972`, `vB_Kpn_F48`, `vB_Kp_XP4`, `KPP-5`,
+    `KpS8`, `vB_KpnM_Seu621`, `vB_KpnP_Dlv622`, `vABWU2101`, and `vECPW8`.
+- New downloaded host reference proxies include:
+  - `E. coli K-12 MG1655` (`NC_000913.3`),
+  - `Salmonella Typhimurium LT2` (`NC_003197.2`),
+  - `K. pneumoniae HS11286` (`NC_016845.1`),
+  - `P. aeruginosa PAO1` (`NC_002516.2`),
+  - `S. aureus NCTC 8325` (`NC_007795.1`),
+  - `A. baumannii ATCC 17978` (`NC_009085.1`),
+  - `Citrobacter freundii` proxy (`NZ_CP007557.1`),
+  - `Cronobacter sakazakii ATCC BAA-894` (`NC_009778.1`),
+  - `Proteus mirabilis HI4320` (`NC_010554.1`).
+- Full pair-ready rows currently come from:
+  - `Cady2012_PA14_CRISPR`: PA14/JBD18/JBD25/JBD67.
+  - `Magadan2012_CRISPR3`: DGCC7710/2972 BIM rows, using parent DGCC7710
+    genome linkage for BIM derivatives.
+- Newly resolved phage accessions include:
+  - `vB_Kpn_F48`: `MG746602`.
+  - `vB_Kp_XP4`: `PP663283`.
+  - `KPP-5`: `MW600722.1`.
+  - `KpS8`: `MT178275`.
+  - `vB_KpnM_Seu621`: `MT939253`.
+  - `vB_KpnP_Dlv622`: `MT939252`.
+  - `vABWU2101`: `OK546191.1`.
+  - `vECPW8`: `PQ362703`.
+- Main remaining bottleneck: exact host-strain genome accessions for large
+  phenotype panels, especially ECOR/ESBL/SARA/SARB, MDR Klebsiella clinical
+  panels, MDR APEC `PW*` isolates, and A. baumannii `ABPW*` isolates.
+- Remaining high-value unresolved phage groups:
+  - `MirzaeiNilsson2015_EOP`: `SU10`, `SU16`, `SU27`, `SU32`, `SU57`, `SU63`.
+  - `Abdelhadi2021_STM2`: `vB_STS_1`, `vB_STM_2`, `vB_STS_3`.
+  - `Kim2022_KP1_KP12`: `KP1`, `KP12` still need direct accession
+    confirmation.
+  - `Singh2025_KpCocktail`: `KPKp`, `KSKp`, and cocktail rows need phage
+    accession resolution or source-specific no-genome flagging.
+
+Accession/linkage improvement pass:
+
+- Resolved additional complete phage genome accessions:
+  - `SU10`: `KM044272` (RefSeq alternate `NC_027395.1`).
+  - `SU57`: `MT511058`.
+  - `KSKp`: `PQ306550`.
+- Updated `accession_linkage.tsv` and downloaded corresponding FASTA and
+  GenBank records.
+- Hybrid-ready rows increased from `145` to `213`.
+- Current tier counts:
+  - `tier1_exact_pair`: `13`.
+  - `tier2_proxy_host_exact_phage`: `200`.
+  - `tier4_host_only_or_proxy`: `349`.
+- Added `dataset_tier` to `accession_linkage_coverage.tsv` and propagated it
+  into generated feature tables as metadata. It is excluded from model features.
+- Added `scripts/resolve_host_accession_candidates.py`.
+- Generated `data/curation/host_accession_candidates.tsv`:
+  - queried `80` unresolved host strain/source pairs;
+  - produced `190` candidate rows;
+  - `166` candidate rows require review;
+  - many ECOR hits are plasmids, partial genes, or WGS master records, so no
+    automatic exact host links were promoted.
+
+First model-ready phage-host feature table:
+
+- Added `crispr_phage_predictor/interaction_features.py`.
+- Added `scripts/build_interaction_feature_table.py`.
+- Added `tests/test_interaction_features.py`.
+- Generated `data/training/phage_host_interaction_features.tsv`.
+- Current table after phage-accession improvement:
+  - `213` hybrid-ready interaction rows.
+  - `155` columns.
+  - strict exact/strain-alias host rows: `13`.
+  - reference-proxy host rows: `200`.
+  - binary susceptibility labels:
+    - `resistant`: `77`.
+    - `susceptible`: `68`.
+  - EOP classes:
+    - `high`: `43`.
+    - `medium`: `15`.
+    - `low`: `10`.
+    - `trace`: `7`.
+    - `none`: `67`.
+    - `not_reported`: `3`.
+- Feature families currently included:
+  - phenotype labels and EOP class/value,
+  - exact/proxy linkage provenance,
+  - host/phage accessions and local FASTA paths,
+  - host and phage genome length,
+  - host and phage GC percentage,
+  - host and phage 3-mer frequencies,
+  - phage/host length ratio,
+  - phage-host GC delta.
+- This is an auditable baseline feature table only. It does not yet include
+  CRISPR spacer/PAM matches, anti-CRISPR predictions, receptor features, or
+  defense-system annotations.
+
+First phage-host baseline classifier:
+
+- Added `crispr_phage_predictor/phage_host_baseline.py`.
+- Added `scripts/train_phage_host_baseline.py`.
+- Added `tests/test_phage_host_baseline.py`.
+- Generated outputs under `data/training/phage_host_baseline/`.
+- Target: `binary_susceptibility` after excluding `eop_class = not_reported`.
+- Metadata leakage controls:
+  - excludes interaction IDs, source keys, organism names, strain names, phage
+    names, accessions, local paths, labels, and EOP values from model features;
+  - retains numeric genome/k-mer features and `uses_reference_proxy_host`.
+- Evaluation summary:
+  - row-random split:
+    - majority baseline accuracy `0.5116`, macro F1 `0.3385`;
+    - logistic regression accuracy `0.7674`, macro F1 `0.7643`;
+    - random forest accuracy `0.7209`, macro F1 `0.7196`;
+    - ExtraTrees accuracy `0.7209`, macro F1 `0.7171`.
+  - phage-held-out split:
+    - majority baseline accuracy `0.3774`, macro F1 `0.2740`;
+    - logistic regression accuracy `0.6226`, macro F1 `0.3837`;
+    - random forest/ExtraTrees accuracy `0.3774`, macro F1 `0.3437`.
+  - source-held-out split:
+    - majority baseline accuracy `0.4000`, macro F1 `0.2857`;
+    - logistic/random forest/ExtraTrees accuracy `0.4833`, macro F1 `0.4762`.
+- Interpretation:
+  - row-random performance is optimistic and should not be used for manuscript
+    claims;
+  - grouped splits show weak generalization, especially with small, proxy-heavy
+    data and no CRISPR/PAM/Acr/receptor/defense features yet;
+  - next model step should add biologically meaningful features and resolve
+    more exact phage/host accessions before optimizing algorithms.
+
+First CRISPR targeting feature layer:
+
+- Added `crispr_phage_predictor/interaction_targeting_features.py`.
+- Added `scripts/add_targeting_features.py`.
+- Added `tests/test_interaction_targeting_features.py`.
+- Generated `data/training/phage_host_interaction_features_with_targeting.tsv`.
+- The feature builder uses Diced/MinCED-compatible detection when available,
+  exact spacer matching, and SABR's CRISPR targeting-evidence score.
+- Internal exact-repeat fallback is limited to small FASTA records because the
+  transparent internal scanner is too slow for multi-Mb reference genomes.
+- Current augmented table after phage-accession improvement:
+  - `213` rows.
+  - `169` columns.
+  - `13` rows with spacer hits.
+  - max CRISPR targeting score `60.0`.
+- Spacer-hit rows are exactly the strict CRISPR-positive systems:
+  - PA14/JBD18/JBD25/JBD67 rows.
+  - DGCC7710/2972 BIM rows.
+- Re-running `scripts/train_phage_host_baseline.py` on the targeting-augmented
+  table produced the same summary metrics as the composition-only table because
+  targeting features are nonzero only in 13 rows and most hybrid rows use
+  reference-proxy hosts with no source-specific spacer acquisition.
+- Conclusion: targeting layer works technically and recovers known positives,
+  but model improvement requires exact assayed host genomes, phage accessions
+  for remaining panels, anti-CRISPR features, receptor/tail-fiber features, and
+  broader CRISPR-positive/negative phenotype diversity.
+
+Phage-side GenBank annotation feature layer:
+
+- Added `crispr_phage_predictor/phage_annotation_features.py`.
+- Added `scripts/download_phage_genbank_records.py`.
+- Added `scripts/add_phage_annotation_features.py`.
+- Added `tests/test_phage_annotation_features.py`.
+- Downloaded `12` linked phage GenBank records to
+  `data/curation/downloads/phages_genbank/`.
+- Generated `data/training/phage_host_interaction_features_with_annotations.tsv`.
+- Current annotation-augmented table after phage-accession improvement:
+  - `213` rows.
+  - `191` columns.
+  - annotation features include CDS count, hypothetical CDS fraction, integrase,
+    recombinase, excisionase, repressor, terminase, portal, capsid, tail,
+    tail-fiber/receptor-binding, baseplate, holin, lysin/endolysin,
+    depolymerase, DNA methyltransferase, restriction-evasion, anti-CRISPR
+    keyword, temperate marker, structural marker, and lysis marker counts.
+- Annotation results:
+  - no anti-CRISPR keyword hits in the current linked GenBank product
+    annotations;
+  - temperate-marker keywords are present in several phages, including JBD
+    phages, 2972, vB_KpnP_Dlv622, and vB_Kpn_F48;
+  - tail/structural/lysis markers are broadly detected.
+- Baseline retraining on the 213-row annotation-augmented table:
+  - row-random logistic regression accuracy `0.7460`, macro F1 `0.7429`;
+  - row-random random forest accuracy `0.7460`, macro F1 `0.7444`;
+  - phage-held-out random forest accuracy `0.7000`, macro F1 `0.6875`;
+  - phage-held-out ExtraTrees accuracy `0.7000`, macro F1 `0.7000`;
+  - source-held-out logistic/random forest/ExtraTrees accuracy `0.4400`,
+    macro F1 `0.4400`.
+- Interpretation:
+  - annotation features did not improve generalization;
+  - this is expected because most annotation features are constant per phage
+    while rows mix susceptible and resistant outcomes for the same phage;
+  - next useful feature direction is interaction-specific host/phage matching:
+    receptor/tail-fiber similarity, exact host genomes, defense-system calls,
+    and curated Acr databases rather than raw keyword counts alone.
+
+Exact host assembly promotion pass:
+
+- Added `scripts/promote_host_assembly_links.py`.
+- The script queries NCBI Assembly for unresolved host strain/source pairs,
+  fetches assembly reports, and promotes only candidates whose report contains
+  the exact expected strain name and `Genome representation: full`.
+- The nucleotide candidate table remains useful for review, but Assembly is the
+  correct source for whole-host FASTA files because many nucleotide hits are
+  plasmids, partial genes, or WGS master placeholders.
+- Dry run over the first 200 unresolved strain/source pairs:
+  - `230` assembly candidate rows reviewed.
+  - `71` exact assemblies passed report-level checks.
+- Committed run:
+  - appended `71` exact bacterial assembly rows to
+    `data/curation/accession_linkage.tsv`.
+  - downloaded their FASTA files under `data/curation/downloads/bacteria/`.
+  - wrote candidate review evidence to
+    `data/curation/host_assembly_candidates.tsv`.
+- Current linkage coverage after promotion:
+  - total interaction rows: `562`.
+  - exact/strain-alias bacterial genome linked rows: `197`.
+  - exact/proxy bacterial genome linked rows: `562`.
+  - phage genome linked rows: `213`.
+  - strict exact-pair genome-ready rows: `74` (up from `13`).
+  - hybrid-ready rows: `213`.
+  - dataset tiers:
+    - `tier1_exact_pair`: `74`.
+    - `tier2_proxy_host_exact_phage`: `139`.
+    - `tier4_host_only_or_proxy`: `349`.
+- Rebuilt downstream outputs:
+  - `data/curation/accession_linkage_coverage.tsv`.
+  - `data/training/phage_host_interaction_features.tsv`.
+  - `data/training/phage_host_interaction_features_with_targeting.tsv`.
+  - `data/training/phage_host_interaction_features_with_annotations.tsv`.
+  - `data/training/phage_host_baseline_with_annotations/`.
+- Current modelable table remains `213` rows because exact phage genome linkage
+  is now the limiting factor, not host genome availability for the promoted
+  ECOR rows.
+- Baseline metrics on the combined targeting + annotation feature table are
+  unchanged from the prior annotation run:
+  - row-random logistic/random-forest/ExtraTrees accuracy about `0.746`.
+  - phage-held-out random forest and ExtraTrees accuracy `0.700`.
+  - source-held-out models accuracy `0.440`.
+- Interpretation:
+  - this pass mainly improves provenance and enables true exact-host feature
+    extraction for many Mirzaei/Nilsson ECOR rows;
+  - it does not add new modelable rows until more phages are resolved;
+  - the next bottleneck is phage accession resolution for SU16, SU27, SU32,
+    SU63 and other unresolved panels, followed by host defense-system and
+    receptor/tail-fiber compatibility features.
+
+Database QA audit:
+
+- Added `scripts/audit_phage_host_database.py`.
+- The audit checks:
+  - interaction and accession-linkage schemas;
+  - duplicate IDs and duplicate exact linkage targets;
+  - EOP class/value consistency;
+  - susceptibility-label consistency warnings;
+  - accession-linkage local FASTA paths;
+  - downloaded FASTA record counts and base-pair totals;
+  - coverage table alignment with interaction IDs;
+  - feature table alignment with hybrid-ready coverage rows;
+  - promoted host assembly evidence.
+- First stricter run found one stale metadata issue in
+  `data/curation/downloaded_records.tsv`:
+  - `NC_002737.2` was recorded as `1852441` bp;
+  - the local FASTA contains `1852433` bp.
+- Corrected the `NC_002737.2` downloaded-record total to match the FASTA.
+- Current QA status:
+  - `python scripts/audit_phage_host_database.py` reports `audit_status clean`
+    and `issues 0`.
+  - `python -m py_compile scripts/audit_phage_host_database.py scripts/promote_host_assembly_links.py`
+    passes.
+  - focused phage-host tests report `19 passed`.
+
+Fuzzy CRISPR targeting and threshold experiment:
+
+- Added fuzzy spacer/protospacer matching to
+  `crispr_phage_predictor/interaction_targeting_features.py`.
+- New targeting variables include:
+  - `fuzzy_spacer_candidate_count`;
+  - `fuzzy_unique_spacers`;
+  - `fuzzy_targeted_phage_contig_count`;
+  - `best_fuzzy_spacer_identity`;
+  - `best_fuzzy_spacer_mismatches`;
+  - `best_fuzzy_seed_edge_mismatches`;
+  - `best_fuzzy_distal_mismatches`;
+  - `fuzzy_seed_perfect_hit_count`;
+  - `fuzzy_near_perfect_hit_count`;
+  - `fuzzy_high_confidence_hit_count`;
+  - `graded_crispr_interference_score`.
+- The fuzzy scan allows imperfect spacer hits up to four mismatches and uses the
+  better of the two spacer ends as a conservative possible PAM-proximal seed
+  signal when subtype/PAM orientation is not available.
+- Added `scripts/evaluate_targeting_thresholds.py` to evaluate CRISPR targeting
+  thresholds directly against resistance/susceptibility labels.
+- Added `--restrict-tier` to `scripts/train_phage_host_baseline.py` so exact
+  host-phage rows can be evaluated separately from proxy-host rows.
+- Regenerated:
+  - `data/training/phage_host_interaction_features_with_targeting.tsv`
+    (`213` rows, `180` columns).
+  - `data/training/phage_host_interaction_features_with_annotations.tsv`
+    (`213` rows, `202` columns).
+  - `data/training/phage_host_baseline_with_fuzzy_targeting/`.
+  - `data/training/phage_host_baseline_with_fuzzy_targeting_tier1_exact_pair/`.
+  - `data/training/targeting_threshold_evaluation.tsv`.
+  - `data/training/targeting_threshold_evaluation_tier1_exact_pair.tsv`.
+- Current targeting coverage:
+  - exact spacer-hit rows remain `13`.
+  - fuzzy spacer-candidate rows are also `13`.
+  - fuzzy high-confidence rows are `13`.
+  - this means the improved alignment logic works, but current CRISPR-detected
+    host arrays still only explain the PA14/JBD and DGCC7710/2972 resistance
+    systems.
+- Threshold interpretation:
+  - On all modelable rows, CRISPR targeting thresholding reaches accuracy
+    `0.542857`, macro F1 `0.428312`.
+  - On tier1 exact-pair rows, CRISPR targeting thresholding reaches accuracy
+    `0.704225`, macro F1 `0.639942`.
+  - In the tier1 exact-pair subset it predicts `10` resistant rows and has `0`
+    susceptible false positives, but misses `21` resistant rows.
+  - Therefore CRISPR targeting is currently high-precision but low-recall for
+    resistance in this database.
+- Baseline retraining with fuzzy variables:
+  - all modelable rows:
+    - row-random random forest accuracy `0.714286`, macro F1 `0.713636`;
+    - phage-held-out random forest/ExtraTrees accuracy `0.700000`, macro F1
+      about `0.700000`;
+    - source-held-out models accuracy `0.440000`, macro F1 `0.440000`.
+  - tier1 exact-pair only:
+    - row-random ExtraTrees accuracy `0.818182`, macro F1 `0.811966`;
+    - grouped splits are unstable/collapsed because the exact-pair subset has
+      only `71` modelable rows after excluding not-reported EOP rows and is
+      source/phage biased.
+- Scientific interpretation:
+  - imperfect matching features are now represented, which addresses the concern
+    that resistance can occur without a perfect spacer/protospacer match;
+  - current data do not yet show additional fuzzy-only positives beyond exact
+    CRISPR systems;
+  - next real model improvement requires more CRISPR-positive assayed host
+    genomes, calibrated subtype-specific PAM rules, and Acr/defense-system
+    homology features.
+- Current validation:
+  - `python scripts/audit_phage_host_database.py` reports clean with `0` issues.
+  - focused phage-host tests report `20 passed`.
+
+Release-hardening pass for v0.1-beta:
+
+- Added explicit README positioning: SABR complements existing CRISPR array
+  callers, Cas-locus typers, spacer-target search tools, and phage-host
+  predictors by integrating uploaded bacterial/phage FASTA panel analysis into
+  a bacteria-by-phage CRISPR targeting-evidence matrix with repeat-derived
+  subtype and PAM/PFS support.
+- Updated `RELEASE_CHECKLIST.md` so Docker support, model SHA-256 checking, and
+  tiny synthetic example FASTAs are listed as ready rather than future tasks.
+- Updated `DEPLOYMENT.md` to use a clean-checkout-safe pytest temp directory:
+  `python -m pytest --basetemp=.pytest-tmp -p no:cacheprovider`.
+- Verification on 2026-06-09:
+  - `python -m compileall -q app.py crispr_phage_predictor scripts docs` passed.
+  - `python scripts/ensure_model_artifact.py` found the local runtime artifact.
+  - focused release tests passed: `11 passed`.
+  - full pytest suite passed with cache disabled: `106 passed`.
+  - `python scripts/audit_phage_host_database.py` reported `audit_status clean`
+    and `issues 0`.
+  - foreground Streamlit startup reached the serving state on
+    `http://localhost:8502`; hidden background launch exited in this shell
+    environment, so the persistent local server was not left running.
+
+UI update after release-hardening:
+
+- The Streamlit CRISPR detection selector now defaults to
+  `MinCED-compatible` instead of `Auto recommended`.
+- Removed the sidebar warning phrase that described MinCED-compatible detection
+  as benchmarking-only and potentially slow on whole-genome uploads.
+- Renamed the primary button to `Run SABR analysis`.
+- Analysis progress bars now render in the sidebar directly under the run button
+  rather than lower on the main results page, so users see immediate feedback
+  while detection and spacer-phage matching are running.
+- Fixed result/detail navigation after a completed run:
+  - the app now keeps rendering the latest heatmap/results on ordinary widget
+    reruns instead of stopping at the pre-run upload message;
+  - `Open hit details` uses session-state navigation instead of normal query
+    parameter mutation, avoiding half-populated rerun states;
+  - if session state is missing, the app reloads the latest saved run from
+    `outputs/runs/` using `evidence_matrix.csv`, `heatmap.csv`, and
+    `spacer_hits.csv`.
+- Fixed brittle PAM/PFS reporting:
+  - previous logic only checked the immediately adjacent motif-length window,
+    so a `3prime:NGG` rule on `TTCGAGGGTA` reported adjacent `TTC` as
+    unsupported even though nearby `AGG` was visible in the displayed flank;
+  - PAM/PFS evaluation now prefers the adjacent motif, then scans the displayed
+    flank for the nearest compatible motif and reports `compatible_nearby`;
+  - spacer-hit outputs and the detail page now include
+    `pam_offset_from_protospacer` so users can see whether support is adjacent
+    (`0`) or offset within the flank.
+- Fixed BLAST hit-detail alignment display:
+  - BLAST identity is computed over the aligned BLAST segment, but the detail
+    page previously displayed the full original spacer against BLAST's subject
+    segment, which made partial approximate hits look inconsistent;
+  - BLAST output now includes `qseq` and `sseq`; spacer-hit exports preserve
+    `aligned_spacer_sequence` and `aligned_protospacer_sequence`;
+  - the hit-details alignment now renders those aligned BLAST strings when
+    available, while keeping the full original spacer for provenance.
+- Article-linked release direction:
+  - use GitHub as the development repository;
+  - archive the frozen `v0.1-beta` source release plus runtime model artifact on
+    Zenodo for DOI-backed citation;
+  - deploy the live browser demo on Hugging Face Spaces with Docker;
+  - configure `SABR_MODEL_URL` to the Zenodo-hosted model URL and
+    `SABR_MODEL_SHA256` to
+    `ae0e8a5d56d6a2a4eb8206fb916fd9dee51f7fb9276528346b0cb8279b76cd32`.
+- Added publication/release metadata files:
+  - `CITATION.cff`;
+  - `.zenodo.json`;
+  - `MODEL_CARD.md`;
+  - `RELEASE_RUNBOOK.md`.
+- Added an in-app public-demo privacy note warning users not to upload sensitive
+  unpublished genomes to hosted demos and recommending local Docker for private
+  lab analyses.
+
+Current publication/deployment state as of 2026-06-09:
+
+- Recommended public/article release architecture is settled:
+  - GitHub for active development and issue tracking.
+  - Zenodo for the frozen citable `v0.1-beta` source/model release DOI.
+  - Hugging Face Spaces for the live Docker/Streamlit browser demo.
+- Release metadata files now exist:
+  - `CITATION.cff`;
+  - `.zenodo.json`;
+  - `MODEL_CARD.md`;
+  - `RELEASE_RUNBOOK.md`;
+  - `deployment/huggingface/README.md`.
+- Runtime model artifact selected for release:
+  - path: `models/cas_subtype_extratrees.joblib`;
+  - size: `410202588` bytes;
+  - SHA-256:
+    `ae0e8a5d56d6a2a4eb8206fb916fd9dee51f7fb9276528346b0cb8279b76cd32`;
+  - method: ExtraTrees;
+  - training rows: `23478`;
+  - classes: `I-A`, `I-B`, `I-C`, `I-D`, `I-E`, `I-F`, `I-G`,
+    `II-A`, `II-B`, `II-C`, `III-A`, `III-B`, `III-C`, `III-D`,
+    `V-A`, `V-K`, `VI-B1`.
+- Remaining account/legal metadata placeholders before public release:
+  - GitHub owner/repository URL in `CITATION.cff` and `.zenodo.json`;
+  - Hugging Face Space owner/name in `CITATION.cff` and `.zenodo.json`;
+  - final license identifier in `CITATION.cff` and `.zenodo.json`;
+  - final Zenodo DOI/record URL after release reservation/publication;
+  - final `SABR_MODEL_URL` pointing to the archived model artifact.
+- Latest release-prep verification:
+  - `python -m py_compile app.py` passed;
+  - focused tests for BLAST alignment/PAM/output paths passed: `21 passed`;
+  - local Streamlit app restarted and returned HTTP `200 OK` at
+    `http://127.0.0.1:8502`.
+- Current live local app process was restarted after adding release-prep UI/docs
+  changes. Refresh the browser before testing.
+
+Current functionality/update state as of 2026-06-11:
+
+- Product direction remains a two-track plan:
+  - keep the current app stabilizable as a `v0.1-beta` public evidence-mapping
+    release;
+  - continue adding functionality on top without changing the claim to
+    phenotype-level resistance prediction.
+- Added first pass of post-beta functionality focused on usability and
+  interpretation rather than performance:
+  - sidebar switch to load the built-in demo FASTA panel;
+  - saved-run selector for reopening previous `outputs/runs/` analyses;
+  - highest-evidence pair summary with no/weak/moderate/strong targeting
+    evidence labels;
+  - heatmap-cell detail page now shows the score label, plain-language
+    interpretation, and score-component table alongside spacer/protospacer,
+    PAM/PFS, and seed details;
+  - optional known-interaction CSV/TSV upload with `bacterium` and `phage`
+    columns, plus optional `expected_label` or `susceptibility_label`, compared
+    against SABR targeting evidence;
+  - input-quality warning table for fragmented uploads, high ambiguous-base
+    content, and many short records;
+  - downloadable Markdown report for current/saved runs, also written to each
+    run folder as `sabr_report.md` when possible.
+- Updated `README.md` current-status bullets to include the new demo,
+  interpretation, saved-run, known-interaction comparison, and report features.
+- Verification for this pass:
+  - `.venv\Scripts\python.exe -m py_compile app.py` passed.
+  - focused app/output tests passed: `14 passed`.
+  - full pytest suite passed with cache disabled and `.pytest-tmp` basetemp:
+    `109 passed`.
+- Still recommended before public beta:
+  - manually smoke-test the built-in demo through Streamlit;
+  - Docker-build and browser-test the same demo;
+  - finalize repository/Space/Zenodo/license placeholders before tagging.
+
+UI simplification decision on 2026-06-11:
+
+- Removed the public-facing saved-run selector from the sidebar because it made
+  the first-use workflow feel more complicated than necessary.
+- Removed the public-facing known-interaction table upload/comparison from the
+  Streamlit UI for the same reason.
+- Kept automatic timestamped run outputs under `outputs/runs/` and kept the
+  Markdown report download/write path, because those support reproducibility
+  without adding extra setup decisions for a first-time user.
+- Current intended public workflow is now:
+  - load the built-in demo or upload bacterial/phage FASTA files;
+  - choose methods only if needed;
+  - run SABR analysis;
+  - inspect heatmap, highest-evidence pairs, hit details, score components, and
+    download the report.
+
+Built-in demo update on 2026-06-11:
+
+- Replaced the app's built-in demo target with a lightweight real-data panel
+  under `data/examples/real_demo/`.
+- The demo bacterial input is `real_demo/bacteria/PA14_CRISPR_region.fasta`, a
+  PA14 chromosome excerpt from the existing full PA14 example genome spanning
+  `NC_008463.1:2926400-2937300` and covering the two PA14 CRISPR arrays.
+- The demo phage inputs are:
+  - `real_demo/phages/JBD18_positive_control.fasta`, a real JBD18 phage genome
+    expected to show PA14 spacer-targeting evidence;
+  - `real_demo/phages/Lambda_negative_control.fasta`, an unrelated real phage
+    genome expected to show no PA14 spacer-targeting evidence.
+- Internal-backend validation of the real demo produced:
+  - `2` candidate arrays;
+  - `33` extracted spacers;
+  - `4` spacer hits;
+  - PA14 CRISPR region vs JBD18 after reverse-strand seed/PAM display fix:
+    `4` unique spacers, `2/4` PAM-supported hits, best seed mismatches `0`,
+    targeting score `99.97`, strong candidate CRISPR targeting evidence when
+    the subtype model artifact is available;
+  - PA14 CRISPR region vs Lambda: `0` unique spacers, score `0.0`, no
+    spacer-match evidence.
+
+UI interpretation clarification on 2026-06-12:
+
+- Added a plain-language note under each selected pair's evidence label:
+  - if PAM/PFS was not evaluated, the app now states that the score is driven by
+    spacer count plus identity/coverage and that PAM/PFS/seed layers did not
+    contribute;
+  - if PAM/PFS was evaluated, the app states whether evaluated hits supported
+    the selected rule.
+- Added a per-hit warning when `PAM/PFS support` is `not_evaluated` because no
+  PAM/PFS rule was selected for that hit. The warning points users to
+  `Auto from predicted subtype` or a manual expert override before running the
+  analysis.
+- Interpretation decision: a score such as `60.00` can be moderate candidate
+  CRISPR targeting evidence from multiple high-identity spacer/protospacer hits
+  even when PAM/PFS was not evaluated. It should be read as spacer evidence, not
+  PAM-supported evidence, unless the PAM/PFS fields are populated.
+
+Demo-default polish on 2026-06-12:
+
+- Changed first-run defaults to the internal exact-repeat CRISPR detector and
+  internal exact spacer matcher. This makes the built-in real demo portable and
+  predictable even when MinCED/BLAST are not installed.
+- Kept PAM/PFS evaluation defaulted to `Auto from predicted subtype`.
+- Added an in-app expected-result note when `Use built-in real demo` is checked:
+  PA14/JBD18 should show spacer-targeting evidence, while PA14/Lambda should
+  show no spacer-match evidence.
+
+Reverse-strand hit display fix on 2026-06-12:
+
+- Hit details previously displayed the raw phage genomic protospacer segment in
+  the Spacer/Protospacer alignment block. For reverse-strand hits, this made a
+  true 100% reverse-complement match appear mismatched on screen.
+- The detail page now reverse-complements internal exact-match protospacers for
+  display when `strand == "-"`, so the visual alignment agrees with the
+  identity value.
+- The phage-reference context block remains in raw genomic orientation and now
+  has a caption explaining the distinction for reverse-strand hits.
+- The PAM/seed annotation path now also uses a strand-oriented protospacer for
+  seed-mismatch summaries. Before this fix, reverse-strand seed mismatch counts
+  could be computed against the raw genomic segment instead of the matching
+  protospacer orientation.
+
+Saved-output hardening on 2026-06-12:
+
+- Empty summary tables now preserve CSV headers for candidate arrays, spacers,
+  spacer hits, PAM subtype support, and evidence matrices.
+- This prevents no-hit/no-array runs from writing zero-column CSV files that
+  later trigger `pandas.errors.EmptyDataError` when the app reloads saved
+  results or reports.
+- Removed silent auto-loading of the latest saved run from disk in the main app
+  view. This prevents stale old runs from appearing after a refresh and
+  confusing users about whether they are looking at the newly selected demo or
+  an older analysis. Saved outputs remain on disk, and hit-details recovery can
+  still load a specific run ID when one is present.
+- Verification after this hardening pass:
+  - `.venv\Scripts\python.exe -m compileall -q app.py crispr_phage_predictor tests`
+    passed;
+  - `.venv\Scripts\python.exe -m pytest --basetemp=.pytest-tmp -p no:cacheprovider -q`
+    passed with `111 passed`;
+  - local Streamlit endpoint returned HTTP `200 OK` at
+    `http://127.0.0.1:8501`.
+
+Release metadata update on 2026-06-12:
+
+- User selected MIT as the public-beta open-source license.
+- Updated `CITATION.cff` and `.zenodo.json` license fields to `MIT`.
+- Added repository `LICENSE` with MIT text and copyright holder:
+  `Copyright (c) 2026 Esber Saba, The Phage Lab, Faculty of Medicine, American University of Beirut`.
+- Updated `RELEASE_CHECKLIST.md` and `RELEASE_RUNBOOK.md` so the remaining
+  license task is only to confirm the copyright holder text before tagging.
+- User provided public support/contact details:
+  - Esber Saba, Ph.D.
+  - The Phage Lab, Faculty of Medicine, American University of Beirut
+  - `es60@aub.edu.lb`
+- Added this contact to `CITATION.cff`, `.zenodo.json`, `README.md`,
+  `DEPLOYMENT.md`, `deployment/huggingface/README.md`,
+  `RELEASE_CHECKLIST.md`, and `RELEASE_RUNBOOK.md`.
+
+Release-readiness checkpoint on 2026-06-17:
+
+- Verification passed:
+  - `.venv\Scripts\python.exe -m compileall -q app.py crispr_phage_predictor scripts docs`;
+  - `.venv\Scripts\python.exe scripts\ensure_model_artifact.py`;
+  - `.venv\Scripts\python.exe scripts\audit_phage_host_database.py`
+    reported `audit_status clean` and `issues 0`;
+  - `.venv\Scripts\python.exe -m pytest --basetemp=.pytest-tmp -p no:cacheprovider -q`
+    passed with `111 passed` and two expected Biopython warnings from malformed
+    synthetic GenBank test fixtures.
+- Foreground Streamlit startup reached the serving state on
+  `http://localhost:8501`; detached background launch still exits in this shell
+  environment, so browser testing should use the foreground command or Docker.
+- Built-in real demo pipeline validation with internal detector/matcher and
+  automatic subtype-derived PAM/PFS annotation produced:
+  - `2` candidate arrays;
+  - `33` extracted spacers;
+  - `4` spacer hits;
+  - PA14 CRISPR region vs JBD18: score `99.97`, `4` unique matching spacers,
+    `2/4` PAM-supported hits, strong candidate CRISPR targeting evidence;
+  - PA14 CRISPR region vs Lambda: score `0.00`, no spacer-match evidence.
+- Docker Desktop initially needed time to expose the Linux engine, then worked.
+- Docker build passed for `sabr:local`.
+- Updated the Dockerfile `CMD` to JSON shell form to avoid Docker's
+  `JSONArgsRecommended` warning while preserving environment-variable expansion.
+- Fresh Docker container `sabr-local-test` returned HTTP `200` at
+  `http://127.0.0.1:7860`.
+- Docker startup without `SABR_MODEL_URL` reports the documented missing-model
+  fallback and still serves the app.
+- Docker model-mounted browser test:
+  - the first Docker test container still showed the sidebar warning
+    `ExtraTrees subtype model artifact is missing` because it was the old
+    container created before mounting the model;
+  - recreated `sabr-local-test` with the local artifact mounted to
+    `/home/user/app/models/cas_subtype_extratrees.joblib`;
+  - verified inside the container that the model file exists at about `392M`;
+  - Docker startup log changed to
+    `Using model artifact at models/cas_subtype_extratrees.joblib.`;
+  - HTTP check still returned `200` at `http://127.0.0.1:7860`;
+  - browser refresh confirmed the subtype-model warning was gone.
+- Remaining public-release blockers are external metadata/distribution:
+  - final Hugging Face Space owner/name and URL;
+  - Zenodo DOI/record URL;
+  - final DOI-backed `SABR_MODEL_URL`;
+  - optional fresh-venv manual Streamlit smoke test before tagging.

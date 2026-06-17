@@ -67,7 +67,10 @@ def find_spacer_hits_with_blast(
                 "-dust",
                 "no",
                 "-outfmt",
-                "6 qseqid sseqid pident length mismatch gapopen qstart qend sstart send evalue bitscore sseq",
+                (
+                    "6 qseqid sseqid pident length mismatch gapopen qstart qend "
+                    "sstart send evalue bitscore qseq sseq"
+                ),
                 "-out",
                 str(output_path),
             ],
@@ -132,21 +135,42 @@ def _parse_blast_hits(
         if not line.strip():
             continue
         fields = line.split("\t")
-        (
-            query_id,
-            subject_id,
-            pident,
-            alignment_length,
-            mismatch,
-            _gapopen,
-            _qstart,
-            _qend,
-            sstart,
-            send,
-            evalue,
-            bitscore,
-            subject_sequence,
-        ) = fields
+        if len(fields) == 14:
+            (
+                query_id,
+                subject_id,
+                pident,
+                alignment_length,
+                mismatch,
+                _gapopen,
+                _qstart,
+                _qend,
+                sstart,
+                send,
+                evalue,
+                bitscore,
+                query_sequence,
+                subject_sequence,
+            ) = fields
+        elif len(fields) == 13:
+            (
+                query_id,
+                subject_id,
+                pident,
+                alignment_length,
+                mismatch,
+                _gapopen,
+                _qstart,
+                _qend,
+                sstart,
+                send,
+                evalue,
+                bitscore,
+                subject_sequence,
+            ) = fields
+            query_sequence = spacer_map[query_id][2]
+        else:
+            continue
         array, spacer_index, spacer_sequence = spacer_map[query_id]
         phage_record = phage_map[subject_id]
         identity = float(pident) / 100
@@ -188,6 +212,8 @@ def _parse_blast_hits(
                 evalue=float(evalue),
                 bitscore=float(bitscore),
                 spacer_sequence=spacer_sequence,
+                aligned_spacer_sequence=query_sequence.upper(),
+                aligned_protospacer_sequence=subject_sequence.upper(),
                 protospacer_sequence=subject_sequence.replace("-", "").upper(),
                 protospacer_5p_flank=context.protospacer_5p_flank,
                 protospacer_3p_flank=context.protospacer_3p_flank,

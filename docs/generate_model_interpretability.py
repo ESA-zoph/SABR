@@ -21,7 +21,7 @@ from crispr_phage_predictor.ml.train_classifier import _filter_min_class_count, 
 
 
 DATASET = ROOT / "data" / "training" / "repeats_cas_types_crisprcasdb_sql_candidate.csv"
-OUTPUT_DIR = ROOT / "docs" / "interpretability" / "crisprcasdb_extratrees"
+OUTPUT_DIR = ROOT / "docs" / "interpretability" / "selected_sabr_extratrees"
 ASSET_DIR = ROOT / "docs" / "manuscript_assets"
 
 
@@ -34,8 +34,8 @@ def main() -> None:
     builtin.to_csv(OUTPUT_DIR / "builtin_feature_importance.csv", index=False)
     _plot_top_features(
         builtin,
-        "ExtraTrees Built-In Feature Importance",
-        ASSET_DIR / "crisprcasdb_builtin_feature_importance",
+        "Selected SABR Model: Built-In Feature Importance",
+        ASSET_DIR / "selected_model_builtin_feature_importance",
     )
 
     permutation_features = _permutation_feature_subset(builtin, feature_names, top_n=40)
@@ -43,17 +43,17 @@ def main() -> None:
     permutation.to_csv(OUTPUT_DIR / "permutation_feature_importance.csv", index=False)
     _plot_top_features(
         permutation.rename(columns={"importance_mean": "importance"}),
-        "Held-Out Permutation Feature Importance",
-        ASSET_DIR / "crisprcasdb_permutation_feature_importance",
+        "Selected SABR Model: Held-Out Permutation Importance",
+        ASSET_DIR / "selected_model_permutation_feature_importance",
     )
 
     category = _category_summary(builtin, permutation)
     category.to_csv(OUTPUT_DIR / "feature_category_importance.csv", index=False)
-    _plot_category_summary(category, ASSET_DIR / "crisprcasdb_feature_category_importance")
+    _plot_category_summary(category, ASSET_DIR / "selected_model_feature_category_importance")
 
     error_focus = _typeiii_error_feature_summary(test_features)
     error_focus.to_csv(OUTPUT_DIR / "typeiii_error_feature_summary.csv", index=False)
-    _plot_typeiii_error_summary(error_focus, ASSET_DIR / "crisprcasdb_typeiii_error_feature_summary")
+    _plot_typeiii_error_summary(error_focus, ASSET_DIR / "selected_model_typeiii_error_feature_summary")
     print(f"Wrote interpretability outputs to {OUTPUT_DIR}")
 
 
@@ -241,7 +241,7 @@ def _plot_category_summary(table: pd.DataFrame, output_base: Path) -> None:
     plt.scatter(ordered["permutation_importance"], x, color="#9A6B2F", label="permutation")
     plt.yticks(x, ordered["category"])
     plt.xlabel("Summed importance")
-    plt.title("Feature Importance by Category")
+    plt.title("Selected SABR Model: Feature Importance by Category")
     plt.legend(frameon=False)
     plt.tight_layout()
     plt.savefig(output_base.with_suffix(".png"), dpi=220)
@@ -258,7 +258,7 @@ def _plot_typeiii_error_summary(table: pd.DataFrame, output_base: Path) -> None:
     plt.xticks(range(len(normalized.columns)), normalized.columns, rotation=35, ha="right")
     plt.yticks(range(len(normalized.index)), normalized.index)
     plt.colorbar(label="normalized mean")
-    plt.title("Type III Correct vs Error Feature Pattern")
+    plt.title("Selected SABR Model: Type III Correct vs Error Pattern")
     plt.tight_layout()
     plt.savefig(output_base.with_suffix(".png"), dpi=220)
     plt.savefig(output_base.with_suffix(".svg"))
