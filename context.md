@@ -3828,11 +3828,50 @@ Release-readiness checkpoint on 2026-06-17:
     `Using model artifact at models/cas_subtype_extratrees.joblib.`;
   - HTTP check still returned `200` at `http://127.0.0.1:7860`;
   - browser refresh confirmed the subtype-model warning was gone.
-- Remaining public-release blockers are external metadata/distribution:
-  - final Hugging Face Space owner/name and URL;
-  - Zenodo DOI now provided: `10.5281/zenodo.20737961`
+- External public-release status:
+  - Hugging Face Space URL:
+    `https://huggingface.co/spaces/EsberSaba/SABR`;
+  - Zenodo DOI:
+    `10.5281/zenodo.20737961`
     (`https://doi.org/10.5281/zenodo.20737961`);
-  - DOI-backed `SABR_MODEL_URL` now documented as
-    `https://zenodo.org/records/20737961/files/cas_subtype_extratrees.joblib?download=1`
-    assuming the uploaded file name remains `cas_subtype_extratrees.joblib`;
-  - optional fresh-venv manual Streamlit smoke test before tagging.
+  - DOI-backed `SABR_MODEL_URL`:
+    `https://zenodo.org/records/20737961/files/cas_subtype_extratrees.joblib?download=1`;
+  - optional fresh-venv manual Streamlit smoke test remains useful before
+    tagging a final GitHub release.
+
+Hugging Face deployment checkpoint on 2026-06-18:
+
+- Pushing the full GitHub repository history to Hugging Face was rejected
+  because the history contains binary manuscript/research assets such as
+  `.docx`, `.png`, and `.tif` files.
+- Created a clean Space-only source tree under
+  `release/hf-space-source/` with:
+  - runtime app source;
+  - `crispr_phage_predictor/`;
+  - small `basic_demo` and `real_demo` FASTA inputs;
+  - Dockerfile and requirements;
+  - public metadata files;
+  - no model artifact, no manuscript assets, no generated figures, and no
+    research/provenance binaries.
+- Removed optional Hugging Face YAML `emoji` metadata because the original
+  `emoji: DNA` value was rejected and PowerShell encoded the emoji character as
+  `??`.
+- Clean Space source was force-pushed successfully to
+  `https://huggingface.co/spaces/EsberSaba/SABR`.
+- The first Space runtime attempt failed because
+  `SABR_MODEL_URL` returned `HTTP Error 404: NOT FOUND`; cause was that the
+  Zenodo model file was not yet publicly downloadable.
+- After the Zenodo record/model file became public, the Hugging Face Space
+  started successfully and the app is working.
+- Required Space variables:
+  - `SABR_MODEL_URL=https://zenodo.org/records/20737961/files/cas_subtype_extratrees.joblib?download=1`
+  - `SABR_MODEL_SHA256=ae0e8a5d56d6a2a4eb8206fb916fd9dee51f7fb9276528346b0cb8279b76cd32`
+- Main GitHub repo also received the matching Space README template fix:
+  removed invalid optional `emoji` metadata from
+  `deployment/huggingface/README.md`.
+- Logo handling after Hugging Face binary rejection:
+  - The original PNG logo remains supported locally as `assets/aub-logo.png`.
+  - Added text sidecar support for `assets/aub-logo.png.b64`; when the PNG is
+    absent, the app renders the same PNG from the base64 text file.
+  - The Hugging Face Space source can therefore include the logo without pushing
+    binary image files.

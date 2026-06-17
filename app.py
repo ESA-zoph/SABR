@@ -66,7 +66,11 @@ class DemoUploadedFile:
 
 def image_data_uri(path: Path) -> str:
     if not path.exists():
-        return ""
+        base64_path = path.with_name(f"{path.name}.b64")
+        if not base64_path.exists():
+            return ""
+        encoded = "".join(base64_path.read_text(encoding="ascii").split())
+        return f"data:image/png;base64,{encoded}" if encoded else ""
     encoded = base64.b64encode(path.read_bytes()).decode("ascii")
     return f"data:image/png;base64,{encoded}"
 
