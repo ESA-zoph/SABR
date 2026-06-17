@@ -3875,3 +3875,34 @@ Hugging Face deployment checkpoint on 2026-06-18:
     absent, the app renders the same PNG from the base64 text file.
   - The Hugging Face Space source can therefore include the logo without pushing
     binary image files.
+
+End-of-day handoff on 2026-06-18:
+
+- Main GitHub repository is clean except for untracked local `release/`.
+- Main GitHub repository has been pushed through commit:
+  `a177265 Support text-encoded logo for Space deployment`.
+- Temporary Hugging Face source repository at `release/hf-space-source/` is
+  clean locally and includes commit:
+  `01623dc Restore logo without binary asset`.
+- If not already done before stopping, push the temporary Space source:
+
+```powershell
+cd C:\Users\es60\Desktop\Codex\release\hf-space-source
+git push https://huggingface.co/spaces/EsberSaba/SABR master:main --force
+```
+
+- Tomorrow's next checks:
+  1. Open `https://huggingface.co/spaces/EsberSaba/SABR`.
+  2. Confirm the logo is visible.
+  3. Confirm there is no subtype-model warning.
+  4. Run the built-in real demo.
+  5. Confirm PA14/JBD18 shows strong candidate CRISPR targeting evidence.
+  6. Confirm PA14/Lambda shows no spacer-match evidence.
+  7. If all checks pass, make the Space public if desired.
+  8. Tag GitHub:
+
+```powershell
+cd C:\Users\es60\Desktop\Codex
+git tag v0.1-beta
+git push origin v0.1-beta
+```
