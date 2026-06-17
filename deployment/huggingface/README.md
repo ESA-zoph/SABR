@@ -1,6 +1,5 @@
 ---
 title: SABR
-emoji: DNA
 colorFrom: blue
 colorTo: green
 sdk: docker
